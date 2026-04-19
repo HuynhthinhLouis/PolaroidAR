@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Polaroid Gift Studio</title>
+    <title>Vintage Gift Studio</title>
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -13,72 +13,80 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Nunito:wght@400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700;800&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
 
     <style>
-        :root { --primary: #ff6b81; --bg: #fff5f6; --text: #2f3542; }
-        body { font-family: 'Nunito', sans-serif; margin: 0; padding: 0; background: var(--bg); color: var(--text); }
+        /* TONE MÀU KRAFT PAPER / VINTAGE */
+        :root { 
+            --text-dark: #3e2f25; 
+            --paper-bg: #e6d5b8; 
+            --card-bg: #fbf7f0; 
+            --accent: #8c6a50; 
+            --border: #c8b495;
+        }
+        body { font-family: 'Be Vietnam Pro', sans-serif; margin: 0; padding: 0; background: var(--paper-bg); color: var(--text-dark); }
         
         #app-create { display: flex; flex-direction: column; align-items: center; padding: 30px 15px; min-height: 100vh; }
         
         /* Form Tạo Quà */
-        .form-container { background: #ffffff; padding: 30px 25px; border-radius: 24px; box-shadow: 0 15px 35px rgba(255, 107, 129, 0.1); margin-bottom: 20px; width: 100%; max-width: 420px; box-sizing: border-box; }
-        .form-container h2 { text-align: center; margin-top: 0; margin-bottom: 25px; color: var(--primary); font-weight: 800; font-size: 24px;}
+        .form-container { background: var(--card-bg); padding: 35px 25px; border-radius: 12px; box-shadow: 0 10px 25px rgba(62, 47, 37, 0.15); margin-bottom: 20px; width: 100%; max-width: 420px; box-sizing: border-box; border: 1px solid var(--border); }
+        .form-container h2 { text-align: center; margin-top: 0; margin-bottom: 25px; color: var(--text-dark); font-weight: 800; font-size: 22px; letter-spacing: -0.5px;}
         .input-group { margin-bottom: 15px; }
-        input[type="file"], input[type="text"], textarea { width: 100%; box-sizing: border-box; padding: 14px; border: 2px solid #f1f2f6; border-radius: 12px; font-family: 'Nunito', sans-serif; font-size: 15px; background: #fafbfc; transition: 0.3s; color: #57606f;}
-        input[type="text"]:focus, textarea:focus { border-color: var(--primary); outline: none; background: #fff;}
+        input[type="file"], input[type="text"], textarea { width: 100%; box-sizing: border-box; padding: 14px; border: 2px solid var(--border); border-radius: 8px; font-family: 'Be Vietnam Pro', sans-serif; font-size: 15px; background: #fff; transition: 0.3s; color: var(--text-dark);}
+        input[type="text"]:focus, textarea:focus { border-color: var(--accent); outline: none; }
         
-        .btn-submit, .btn-secondary { width: 100%; padding: 16px; border: none; border-radius: 14px; cursor: pointer; font-weight: 800; font-size: 16px; transition: 0.3s; margin-top: 10px; }
-        .btn-submit { background: var(--primary); color: white; box-shadow: 0 8px 20px rgba(255, 107, 129, 0.3);}
-        .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(255, 107, 129, 0.4); }
-        .btn-secondary { background: #fff; border: 2px solid #f1f2f6; color: #747d8c; }
-        .btn-secondary:hover { background: #f1f2f6; }
+        .btn-submit, .btn-secondary { width: 100%; padding: 16px; border: none; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 16px; transition: 0.2s; margin-top: 10px; font-family: 'Be Vietnam Pro', sans-serif; }
+        .btn-submit { background: var(--text-dark); color: #fff; box-shadow: 0 6px 15px rgba(62, 47, 37, 0.3);}
+        .btn-submit:hover { background: #2a1f18; transform: translateY(-2px); }
+        .btn-submit:disabled { background: var(--border); cursor: not-allowed; transform: none; box-shadow: none;}
+        .btn-secondary { background: transparent; border: 2px solid var(--text-dark); color: var(--text-dark); }
+        .btn-secondary:hover { background: rgba(62, 47, 37, 0.05); }
         
-        .crop-container { display: none; width: 100%; height: 350px; margin-bottom: 15px; background: #f1f2f6; border-radius: 12px; overflow: hidden; }
+        .crop-container { display: none; width: 100%; height: 350px; margin-bottom: 15px; background: #222; border-radius: 8px; overflow: hidden; }
         .crop-container img { max-width: 100%; display: block; }
 
-        /* Khung Preview (Giống Polaroid) */
-        #preview-section { display: none; width: 100%; max-width: 380px; animation: fadeIn 0.5s cubic-bezier(0.1, 0.8, 0.2, 1); }
-        .polaroid-card { background: #fff; padding: 16px 16px 20px 16px; box-shadow: 0 15px 40px rgba(0,0,0,0.08); border-radius: 10px; margin: 0 auto 25px auto; display: flex; flex-direction: column;}
+        /* Khung Preview (Giống Polaroid Giấy) */
+        #preview-section { display: none; width: 100%; max-width: 380px; animation: fadeIn 0.4s ease-out; }
+        .polaroid-card { background: var(--card-bg); padding: 16px 16px 20px 16px; box-shadow: 2px 5px 15px rgba(0,0,0,0.15); border-radius: 4px; margin: 0 auto 25px auto; display: flex; flex-direction: column; border: 1px solid rgba(0,0,0,0.05);}
         
-        .photo-wrapper { width: 100%; aspect-ratio: 3/4; overflow: hidden; border-radius: 6px; background: #eee;}
+        .photo-wrapper { width: 100%; aspect-ratio: 3/4; overflow: hidden; border-radius: 2px; background: #222;}
         .photo-wrapper img { width: 100%; height: 100%; object-fit: cover; }
         
-        .polaroid-text { margin-top: 15px; text-align: center; display: flex; flex-direction: column; align-items: center;}
-        .handwriting { font-family: 'Caveat', cursive; font-size: 26px; color: #2f3542; font-weight: 700; line-height: 1.2; letter-spacing: 1px;}
-        .hint-text { font-size: 10px; color: #a4b0be; letter-spacing: 1px; text-transform: uppercase; margin-top: 8px; margin-bottom: 4px; font-weight: 800;}
+        .polaroid-text { margin-top: 18px; text-align: center; display: flex; flex-direction: column; align-items: center;}
+        .handwriting { font-family: 'Caveat', cursive; font-size: 28px; color: var(--text-dark); font-weight: 700; line-height: 1.2; letter-spacing: 0.5px;}
+        .hint-text { font-size: 11px; color: var(--accent); letter-spacing: 2px; text-transform: uppercase; margin-top: 10px; margin-bottom: 5px; font-weight: 700;}
         
-        .barcode-container { width: 100%; opacity: 0.85; display: flex; justify-content: center;}
-        #prev-barcode { width: 100% !important; height: 40px; }
+        .barcode-container { width: 100%; display: flex; justify-content: center; mix-blend-mode: multiply;}
+        #prev-barcode { width: 100% !important; height: 45px; }
 
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* KHUNG EXPORT ẨN (NÉT CAO) */
+        /* KHUNG EXPORT ẨN (MÃ VẠCH SIÊU ĐẬM) */
         #polaroid-wrapper { position: absolute; top: -9999px; left: -9999px; }
-        #export-frame { width: 500px; background: #ffffff; padding: 25px 25px 35px 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border-radius: 12px; display: flex; flex-direction: column;}
-        .export-photo { width: 100%; aspect-ratio: 3/4; border-radius: 8px; object-fit: cover; background: #eee;}
+        #export-frame { width: 450px; background: var(--card-bg); padding: 22px 22px 30px 22px; display: flex; flex-direction: column;}
+        .export-photo { width: 100%; aspect-ratio: 3/4; border-radius: 2px; object-fit: cover; background: #222;}
         
         .export-text { margin-top: 25px; text-align: center; }
-        .export-handwriting { font-family: 'Caveat', cursive; font-size: 38px; color: #2f3542; font-weight: 700; line-height: 1.2; letter-spacing: 1px;}
-        .export-hint { font-size: 14px; color: #a4b0be; font-family: 'Nunito', sans-serif; letter-spacing: 2px; text-transform: uppercase; margin-top: 15px; margin-bottom: 5px; font-weight: 800;}
+        .export-handwriting { font-family: 'Caveat', cursive; font-size: 36px; color: var(--text-dark); font-weight: 700;}
+        .export-hint { font-size: 13px; color: var(--accent); font-family: 'Be Vietnam Pro', sans-serif; letter-spacing: 2.5px; text-transform: uppercase; margin-top: 15px; margin-bottom: 8px; font-weight: 800;}
         
-        .export-barcode-wrapper { width: 100%; display: flex; justify-content: center; }
-        #export-barcode { width: 100% !important; height: 85px; } /* Vạch bự để quét từ xa */
+        .export-barcode-wrapper { width: 100%; display: flex; justify-content: center; mix-blend-mode: multiply;}
+        #export-barcode { width: 100% !important; height: 100px; } /* Cao và bự để quét xa */
     </style>
 </head>
 <body>
 
     <div id="app-create">
         <div class="form-container" id="input-section">
-            <h2>Gói Gém Kỷ Niệm 🎁</h2>
+            <h2>Đóng Gói Kỷ Niệm 📦</h2>
             <input type="file" id="imageInput" accept="image/*">
             <div class="crop-container" id="cropContainer"><img id="imageToCrop" src="" alt=""></div>
             
-            <div class="input-group"><input type="text" id="recipient" placeholder="Gửi tới ai đó... (VD: Gửi Bé Mèo)"></div>
-            <div class="input-group"><input type="text" id="sender" placeholder="Từ ai đó... (VD: Ký tên: Cún)"></div>
-            <div class="input-group"><textarea id="message" rows="4" placeholder="Viết những lời muốn giấu kín vào đây nhé..."></textarea></div>
+            <div class="input-group"><input type="text" id="recipient" placeholder="Gửi đến: (VD: Bạn thân mến)"></div>
+            <div class="input-group"><input type="text" id="sender" placeholder="Ký tên: (VD: Người giấu mặt)"></div>
+            <div class="input-group"><textarea id="message" rows="4" placeholder="Viết tâm thư vào đây nhé..."></textarea></div>
             
-            <button class="btn-submit" id="btn-preview" onclick="createAndPreview()">Gói quà & Xem trước</button>
+            <button class="btn-submit" id="btn-preview" onclick="createAndPreview()">Tạo Thẻ Polaroid</button>
         </div>
 
         <div id="preview-section">
@@ -86,12 +94,12 @@
                 <div class="photo-wrapper"><img id="preview-img" src="" alt="Preview"></div>
                 <div class="polaroid-text">
                     <div class="handwriting" id="prev-names"></div>
-                    <div class="hint-text">Quét mã để mở thư</div>
+                    <div class="hint-text">QUÉT MÃ ĐỂ MỞ THƯ</div>
                     <div class="barcode-container"><svg id="prev-barcode"></svg></div>
                 </div>
             </div>
-            <button class="btn-submit" id="btn-download" onclick="downloadPolaroid()">Tải ảnh nét về máy</button>
-            <button class="btn-secondary" onclick="backToEdit()">Tạo món quà khác</button>
+            <button class="btn-submit" id="btn-download" onclick="downloadPolaroid()">Tải ảnh in nét cao</button>
+            <button class="btn-secondary" onclick="backToEdit()">Tạo tấm khác</button>
         </div>
 
         <div id="polaroid-wrapper">
@@ -99,7 +107,7 @@
                 <img class="export-photo" id="uploaded-img" src="" alt="">
                 <div class="export-text">
                     <div class="export-handwriting" id="export-names"></div>
-                    <div class="export-hint">SỬ DỤNG MÁY QUÉT ĐỂ MỞ THƯ BÍ MẬT</div>
+                    <div class="export-hint">SỬ DỤNG MÁY QUÉT ĐỂ MỞ THƯ</div>
                     <div class="export-barcode-wrapper"><svg id="export-barcode"></svg></div>
                 </div>
             </div>
@@ -133,17 +141,17 @@
         const sender = document.getElementById('sender').value;
         const recipient = document.getElementById('recipient').value;
         const message = document.getElementById('message').value;
-        if(!cropper || !sender || !recipient || !message) return alert("Bạn điền thiếu thông tin kìa!"); 
+        if(!cropper || !sender || !recipient || !message) return alert("Vui lòng điền đủ thông tin nha!"); 
 
-        const btn = document.getElementById('btn-preview'); btn.innerText = "Đang phù phép..."; btn.disabled = true;
+        const btn = document.getElementById('btn-preview'); btn.innerText = "Đang xử lý..."; btn.disabled = true;
 
         try {
-            const canvas = cropper.getCroppedCanvas({ width: 900, height: 1200 }); // Ảnh nét căng
+            const canvas = cropper.getCroppedCanvas({ width: 900, height: 1200 });
             const croppedFile = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.9));
             
             const shortId = Math.random().toString(36).substring(2, 8).toUpperCase();
-
-            const fileName = `gift_${Date.now()}_${shortId}.jpg`;
+            const fileName = `vintage_${Date.now()}_${shortId}.jpg`;
+            
             await mySupabase.storage.from('polaroid_images').upload(fileName, croppedFile);
             const { data: pUrl } = mySupabase.storage.from('polaroid_images').getPublicUrl(fileName);
 
@@ -154,29 +162,29 @@
             currentFilename = recipient.replace(/[^a-z0-9]/gi, '_').toLowerCase();
             const displayNames = `${recipient} & ${sender}`;
 
-            // Preview
             document.getElementById('preview-img').src = canvas.toDataURL("image/jpeg", 0.5);
             document.getElementById('prev-names').innerText = displayNames;
-            JsBarcode("#prev-barcode", shortId, { height: 40, width: 2, displayValue: false, margin: 0, lineColor: "#2f3542", background: "transparent" });
+            // Preview Barcode
+            JsBarcode("#prev-barcode", shortId, { height: 45, width: 2.2, displayValue: false, margin: 0, lineColor: "#3e2f25", background: "transparent" });
 
-            // Export (Barcode đậm nét để dễ quét)
             document.getElementById('uploaded-img').src = canvas.toDataURL("image/jpeg", 1.0);
             document.getElementById('export-names').innerText = displayNames;
-            JsBarcode("#export-barcode", shortId, { height: 85, width: 4.5, displayValue: false, margin: 0, lineColor: "#2f3542", background: "transparent" });
+            // EXPORT BARCODE: Vạch Cực Đậm (width: 5.5) để in ra dễ quét
+            JsBarcode("#export-barcode", shortId, { height: 100, width: 5.5, displayValue: false, margin: 0, lineColor: "#3e2f25", background: "transparent" });
 
             document.getElementById('input-section').style.display = 'none';
             document.getElementById('preview-section').style.display = 'block';
             window.scrollTo(0, 0);
 
-        } catch (error) { alert("Có lỗi xảy ra: " + error.message); } 
-        finally { btn.innerText = "Gói quà & Xem trước"; btn.disabled = false; }
+        } catch (error) { alert("Lỗi: " + error.message); } 
+        finally { btn.innerText = "Tạo Thẻ Polaroid"; btn.disabled = false; }
     }
 
     function downloadPolaroid() {
         const btn = document.getElementById('btn-download'); btn.innerText = "Đang lưu..."; btn.disabled = true;
-        html2canvas(document.getElementById('export-frame'), { scale: 3, useCORS: true, backgroundColor: "transparent" }).then(canvas => {
+        html2canvas(document.getElementById('export-frame'), { scale: 3, useCORS: true, backgroundColor: "#fbf7f0" }).then(canvas => {
             let link = document.createElement('a'); link.download = `Polaroid_${currentFilename}.png`; link.href = canvas.toDataURL("image/png"); link.click();
-            btn.innerText = "Hoàn tất!"; setTimeout(() => { btn.innerText = "Tải ảnh nét về máy"; btn.disabled = false; }, 2000);
+            btn.innerText = "Đã tải xong!"; setTimeout(() => { btn.innerText = "Tải ảnh in nét cao"; btn.disabled = false; }, 2000);
         });
     }
 
