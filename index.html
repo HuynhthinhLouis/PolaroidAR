@@ -17,41 +17,28 @@
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700;800&family=Dancing+Script:wght@600;700&family=Caveat:wght@600;700&display=swap&subset=vietnamese" rel="stylesheet">
 
     <style>
-        :root { 
-            --text-dark: #3e2f25; 
-            --card-bg: #fbf7f0; 
-            --accent: #d4a373; 
-            --border: #c8b495;
-        }
+        :root { --text-dark: #3e2f25; --card-bg: #fbf7f0; --accent: #d4a373; --border: #c8b495; }
         
         body { 
-            font-family: 'Be Vietnam Pro', sans-serif; 
-            margin: 0; padding: 0; 
-            color: var(--text-dark); 
+            font-family: 'Be Vietnam Pro', sans-serif; margin: 0; padding: 0; color: var(--text-dark); 
             background-color: #d1bfae; 
             background-image: url('https://img.pikbest.com/wp/202343/kraft-paper-texture-textured-background-crumpled-for-a-rustic-look_9977268.jpg!bw700');
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed;
+            background-size: cover; background-position: center; background-attachment: fixed;
         }
         
         #app-create { display: flex; flex-direction: column; align-items: center; padding: 30px 15px; min-height: 100vh; }
         
         .form-container { 
-            background: rgba(251, 247, 240, 0.92); 
-            backdrop-filter: blur(8px);
-            padding: 35px 25px; border-radius: 12px; 
-            box-shadow: 0 15px 35px rgba(30, 20, 15, 0.2); 
+            background: rgba(251, 247, 240, 0.92); backdrop-filter: blur(8px);
+            padding: 35px 25px; border-radius: 12px; box-shadow: 0 15px 35px rgba(30, 20, 15, 0.2); 
             margin-bottom: 20px; width: 100%; max-width: 420px; box-sizing: border-box; border: 1px solid rgba(200, 180, 149, 0.6); 
         }
         .form-container h2 { text-align: center; margin-top: 0; margin-bottom: 25px; color: var(--text-dark); font-weight: 800; font-size: 24px; letter-spacing: -0.5px;}
         
         .input-group { margin-bottom: 15px; }
         input[type="file"], input[type="text"], textarea { 
-            width: 100%; box-sizing: border-box; padding: 14px; 
-            border: 2px solid var(--border); border-radius: 8px; 
-            font-family: 'Be Vietnam Pro', sans-serif; font-size: 15px; 
-            background: rgba(255, 255, 255, 0.8); transition: 0.3s; color: var(--text-dark);
+            width: 100%; box-sizing: border-box; padding: 14px; border: 2px solid var(--border); border-radius: 8px; 
+            font-family: 'Be Vietnam Pro', sans-serif; font-size: 15px; background: rgba(255, 255, 255, 0.8); transition: 0.3s; color: var(--text-dark);
         }
         input[type="text"]:focus, textarea:focus { border-color: var(--accent); background: #fff; outline: none; }
         
@@ -65,94 +52,41 @@
         .crop-container { display: none; width: 100%; height: 350px; margin-bottom: 15px; background: #222; border-radius: 8px; overflow: hidden; }
         .crop-container img { max-width: 100%; display: block; }
 
-        /* Khung Preview (Giống Polaroid Giấy) */
         #preview-section { display: none; width: 100%; max-width: 380px; animation: fadeIn 0.4s ease-out; }
         .polaroid-card { 
-            background: var(--card-bg); padding: 16px 16px 20px 16px; 
-            box-shadow: 2px 10px 25px rgba(0,0,0,0.3); border-radius: 4px; 
-            margin: 0 auto 25px auto; display: flex; flex-direction: column; 
-            border: 1px solid rgba(0,0,0,0.05);
+            background: var(--card-bg); padding: 16px 16px 20px 16px; box-shadow: 2px 10px 25px rgba(0,0,0,0.3); 
+            border-radius: 4px; margin: 0 auto 25px auto; display: flex; flex-direction: column; border: 1px solid rgba(0,0,0,0.05);
         }
         
         .photo-wrapper { width: 100%; aspect-ratio: 3/4; overflow: hidden; border-radius: 2px; background: #222;}
         .photo-wrapper img { width: 100%; height: 100%; object-fit: cover; }
         
-        /* Bố cục mới: Tên và QR cạnh nhau */
-        .polaroid-text-container {
-            margin-top: 18px;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end; /* Căn lề dưới cho tên và QR */
-            width: 100%;
-            padding: 0 5px;
-        }
-        .names-and-hint {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start; /* Tên căn lề trái */
-            flex: 1;
-        }
+        .polaroid-text-container { margin-top: 18px; display: flex; justify-content: space-between; align-items: flex-end; width: 100%; padding: 0 5px; }
+        .names-and-hint { display: flex; flex-direction: column; align-items: flex-start; flex: 1; }
         .handwriting { font-family: 'Dancing Script', 'Caveat', cursive; font-size: 32px; color: var(--text-dark); font-weight: 700; line-height: 1.2;}
         .hint-text { font-size: 11px; color: var(--accent); letter-spacing: 2px; text-transform: uppercase; margin-top: 5px; font-weight: 700;}
         
-        .qr-code-wrapper {
-            display: flex;
-            flex-direction: column;
-            align-items: center; /* QR và text căn giữa */
-            gap: 2px;
-            width: 70px;
-        }
-        #prev-qr-code {
-            width: 60px; height: 60px;
-            border: 2px solid var(--border);
-            padding: 3px; background: #fff;
-        }
-        .scan-me-text {
-            font-size: 10px; color: var(--accent); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
-        }
+        .qr-code-wrapper { display: flex; flex-direction: column; align-items: center; gap: 2px; width: 70px; }
+        #prev-qr-code { width: 60px; height: 60px; border: 2px solid var(--border); padding: 3px; background: #fff; }
+        .scan-me-text { font-size: 10px; color: var(--accent); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
 
         .barcode-container { width: 100%; display: flex; justify-content: center; mix-blend-mode: multiply; margin-top: 5px;}
         #prev-barcode { width: 100% !important; height: 45px; }
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* KHUNG EXPORT ẨN (MÃ VẠCH SIÊU ĐẬM) */
         #polaroid-wrapper { position: absolute; top: -9999px; left: -9999px; }
         #export-frame { width: 450px; background: var(--card-bg); padding: 22px 22px 30px 22px; display: flex; flex-direction: column;}
         .export-photo { width: 100%; aspect-ratio: 3/4; border-radius: 2px; object-fit: cover; background: #222;}
         
-        .export-text-container {
-            margin-top: 25px;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-            width: 100%;
-            padding: 0 10px;
-        }
-        .export-names-and-hint {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-            flex: 1;
-        }
+        .export-text-container { margin-top: 25px; display: flex; justify-content: space-between; align-items: flex-end; width: 100%; padding: 0 10px; }
+        .export-names-and-hint { display: flex; flex-direction: column; align-items: flex-start; flex: 1; }
         .export-handwriting { font-family: 'Dancing Script', 'Caveat', cursive; font-size: 42px; color: var(--text-dark); font-weight: 700;}
         .export-hint { font-size: 13px; color: var(--accent); font-family: 'Be Vietnam Pro', sans-serif; letter-spacing: 2.5px; text-transform: uppercase; margin-top: 10px; font-weight: 800;}
         
-        .export-qr-code-wrapper {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
-            width: 90px;
-        }
-        #export-qr-code {
-            width: 80px; height: 80px;
-            border: 3px solid var(--border);
-            padding: 5px; background: #fff;
-        }
-        .export-scan-me-text {
-            font-size: 13px; color: var(--accent); font-family: 'Be Vietnam Pro', sans-serif; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;
-        }
+        .export-qr-code-wrapper { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 90px; }
+        #export-qr-code { width: 80px; height: 80px; border: 3px solid var(--border); padding: 5px; background: #fff; }
+        .export-scan-me-text { font-size: 13px; color: var(--accent); font-family: 'Be Vietnam Pro', sans-serif; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
 
         .export-barcode-wrapper { width: 100%; display: flex; justify-content: center; mix-blend-mode: multiply; margin-top: 10px;}
         #export-barcode { width: 100% !important; height: 100px; } 
@@ -162,7 +96,7 @@
 
     <div id="app-create">
         <div class="form-container" id="input-section">
-            <h2>Gói Gói Gén Kỷ Niệm 🎁</h2>
+            <h2>Gói Gém Kỷ Niệm 🎁</h2>
             <input type="file" id="imageInput" accept="image/*">
             <div class="crop-container" id="cropContainer"><img id="imageToCrop" src="" alt=""></div>
             
@@ -248,44 +182,37 @@
             const shortId = Math.random().toString(36).substring(2, 8).toUpperCase();
             const fileName = `vintage_${Date.now()}_${shortId}.jpg`;
             
+            // 1. Tải ảnh lên Bucket để lấy Link URL tạm thời
             await mySupabase.storage.from('polaroid_images').upload(fileName, croppedFile);
             const { data: pUrl } = mySupabase.storage.from('polaroid_images').getPublicUrl(fileName);
 
+            // 2. Lưu vào Database
             await mySupabase.from('polaroids').insert([{ 
                 sender, recipient, message, image_url: pUrl.publicUrl, short_id: shortId
             }]);
             
+            // 3. XOÁ ẢNH NGAY LẬP TỨC KHỎI BUCKET (Dung lượng vĩnh viễn không bị đầy)
+            await mySupabase.storage.from('polaroid_images').remove([fileName]);
+            
             currentFilename = recipient.replace(/[^a-zA-Z0-9]/gi, '_').toLowerCase();
             const displayNames = `${recipient} & ${sender}`;
 
-            // Preview UI (Barcode nét bự)
+            // Vẽ UI Xem Trước
             document.getElementById('preview-img').src = canvas.toDataURL("image/jpeg", 0.5);
             document.getElementById('prev-names').innerText = displayNames;
             JsBarcode("#prev-barcode", shortId, { height: 45, width: 2.2, displayValue: false, margin: 0, lineColor: "#3e2f25", background: "transparent" });
 
-            // MỚI: Vẽ Mã QR Xem Trước
             const qrUrl = "https://huynhthinhlouis.github.io/polaroidar/ar.html";
-            document.getElementById('prev-qr-code').innerHTML = ""; // Xóa QR cũ
-            new QRCode(document.getElementById("prev-qr-code"), {
-                text: qrUrl,
-                width: 60, height: 60,
-                colorDark : "#3e2f25", colorLight : "#ffffff",
-                correctLevel : QRCode.CorrectLevel.H
-            });
+            document.getElementById('prev-qr-code').innerHTML = ""; 
+            new QRCode(document.getElementById("prev-qr-code"), { text: qrUrl, width: 60, height: 60, colorDark : "#3e2f25", colorLight : "#ffffff", correctLevel : QRCode.CorrectLevel.H });
 
-            // Export UI (Barcode bự đậm width: 5.5)
+            // Vẽ UI Tải Xuống
             document.getElementById('uploaded-img').src = canvas.toDataURL("image/jpeg", 1.0);
             document.getElementById('export-names').innerText = displayNames;
             JsBarcode("#export-barcode", shortId, { height: 100, width: 5.5, displayValue: false, margin: 0, lineColor: "#3e2f25", background: "transparent" });
 
-            // MỚI: Vẽ Mã QR Export (bự hơn)
-            document.getElementById('export-qr-code').innerHTML = ""; // Xóa QR cũ
-            new QRCode(document.getElementById("export-qr-code"), {
-                text: qrUrl,
-                width: 80, height: 80,
-                colorDark : "#3e2f25", colorLight : "#ffffff",
-                correctLevel : QRCode.CorrectLevel.H
-            });
+            document.getElementById('export-qr-code').innerHTML = ""; 
+            new QRCode(document.getElementById("export-qr-code"), { text: qrUrl, width: 80, height: 80, colorDark : "#3e2f25", colorLight : "#ffffff", correctLevel : QRCode.CorrectLevel.H });
 
             document.getElementById('input-section').style.display = 'none';
             document.getElementById('preview-section').style.display = 'block';
@@ -297,11 +224,10 @@
 
     function downloadPolaroid() {
         const btn = document.getElementById('btn-download'); btn.innerText = "Đang lưu..."; btn.disabled = true;
-        
         setTimeout(() => {
             html2canvas(document.getElementById('export-frame'), { scale: 3, useCORS: true, backgroundColor: "#fbf7f0" }).then(canvas => {
                 let link = document.createElement('a'); link.download = `Polaroid_${currentFilename}.png`; link.href = canvas.toDataURL("image/png"); link.click();
-                btn.innerText = "Đã tải xong!"; setTimeout(() => { btn.innerText = "Tải ảnh in nét cao"; btn.disabled = false; }, 2000);
+                btn.innerText = "Đã tải xong!"; setTimeout(() => { btn.innerText = "Tải bản in nét cao"; btn.disabled = false; }, 2000);
             });
         }, 300);
     }
