@@ -17,14 +17,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Inter:wght@400;600;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 
     <style>
-        /* =========================================
-           CSS GIAO DIỆN CREATE (TẠO ẢNH)
-           ========================================= */
+        /* GIỮ NGUYÊN CSS CỦA BẠN */
         :root { --primary: #111; --bg: #f4f4f9; }
         body { font-family: 'Inter', sans-serif; margin: 0; padding: 0; background: var(--bg); color: #333; }
-        
         #app-create { display: flex; flex-direction: column; align-items: center; padding: 20px 10px; min-height: 100vh; }
-        
         .form-container { background: rgba(255, 255, 255, 0.95); padding: 25px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); margin-bottom: 20px; width: 100%; max-width: 400px; box-sizing: border-box; backdrop-filter: blur(10px); }
         .form-container h2 { text-align: center; margin-top: 0; margin-bottom: 20px; color: var(--primary); font-weight: 600; }
         .input-group { margin-bottom: 12px; }
@@ -34,12 +30,9 @@
         .btn-submit:hover { background: #333; }
         .btn-submit:disabled { background: #999; cursor: not-allowed; }
         .btn-secondary { background: #fff; border: 2px solid var(--primary); color: var(--primary); }
-        
         .crop-container { display: none; width: 100%; height: 350px; margin-bottom: 15px; background: #222; border-radius: 8px; overflow: hidden; }
         .crop-container img { max-width: 100%; display: block; }
         .crop-hint { text-align: center; font-size: 12px; color: #666; margin-top: -10px; margin-bottom: 15px; display: none; }
-
-        /* Preview UI */
         #preview-section { display: none; width: 100%; max-width: 360px; animation: fadeIn 0.4s; }
         .instax-preview { width: 100%; background: #fcfcfc; padding: 18px 18px 85px 18px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); position: relative; box-sizing: border-box; margin: 0 auto 20px auto; }
         .instax-preview img.photo { width: 100%; aspect-ratio: 3/4; object-fit: cover; background: #222; display: block; box-shadow: inset 0 0 5px rgba(0,0,0,0.2); }
@@ -52,8 +45,6 @@
         #prev-qr-code { border: 2px solid #111; padding: 2px; background: white; } 
         .scan-text { font-family: 'Inter', sans-serif; font-size: 8px; font-weight: 800; letter-spacing: 1px; margin-top: 3px; color: #111;}
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* Khung Export Ẩn */
         #polaroid-wrapper { position: absolute; top: -9999px; left: -9999px; }
         #polaroid-frame { width: 400px; background: #fcfcfc; padding: 20px 20px 100px 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); position: relative; box-sizing: border-box; }
         #uploaded-img { width: 100%; aspect-ratio: 3/4; object-fit: cover; background: #222; display: block; }
@@ -64,10 +55,6 @@
         #export-barcode { height: 40px; margin-bottom: 2px;}
         #export-qr-code { border: 3px solid #111; padding: 2px; background: white; } 
         .export-scan-text { font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 800; letter-spacing: 1px; margin-top: 4px; color: #111;}
-
-        /* =========================================
-           CSS GIAO DIỆN AR CAMERA
-           ========================================= */
         #app-ar { display: none; width: 100vw; height: 100vh; overflow: hidden; background: #000; position: fixed; top: 0; left: 0; z-index: 9999; }
         .scanner-container { position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%); width: 280px; height: 280px; z-index: 10; pointer-events: none; }
         .corner { position: absolute; width: 40px; height: 40px; border-color: rgba(255, 255, 255, 0.8); border-style: solid; border-radius: 4px; }
@@ -75,7 +62,6 @@
         .bl { bottom: 0; left: 0; border-width: 0 0 4px 4px; } .br { bottom: 0; right: 0; border-width: 0 4px 4px 0; }
         .scan-line { width: 100%; height: 2px; background: #00ffcc; position: absolute; box-shadow: 0 0 15px 2px rgba(0, 255, 204, 0.6); animation: scan 2.5s infinite cubic-bezier(0.4, 0, 0.2, 1); }
         @keyframes scan { 0% { top: 0; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
-        
         .status-wrapper { position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); z-index: 999; width: 85%; max-width: 350px; text-align: center; }
         #status-ui { background: rgba(20, 20, 20, 0.65); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 16px 20px; border-radius: 16px; font-size: 14px; font-weight: 600; box-shadow: 0 8px 32px rgba(0,0,0,0.3); display: flex; flex-direction: column; align-items: center; gap: 6px; }
         .icon-pulse { width: 12px; height: 12px; background-color: #00ffcc; border-radius: 50%; box-shadow: 0 0 10px #00ffcc; animation: pulse 1.5s infinite; }
@@ -144,31 +130,22 @@
     </div>
 
 <script>
-    // 1. Cấu hình Supabase chung
     const supabaseUrl = 'https://ohnoowsqmyryipfresae.supabase.co';
     const supabaseKey = 'sb_publishable_noPrqgubuZS1dgUPlsnOKw_aOnRdWN0';
     const mySupabase = window.supabase.createClient(supabaseUrl, supabaseKey);
-
-    // 2. Tự động lấy Link hiện tại (Không cần sửa bằng tay nữa!)
     const CURRENT_URL = window.location.origin + window.location.pathname;
 
-    // 3. ĐỊNH TUYẾN LOGIC (ROUTING)
     const urlParams = new URLSearchParams(window.location.search);
     const polaroidId = urlParams.get('id');
 
     if (polaroidId) {
-        // ---- CHẾ ĐỘ AR CAMERA ----
         document.getElementById('app-create').style.display = 'none';
         document.getElementById('app-ar').style.display = 'block';
         bootARSystem(polaroidId);
     } else {
-        // ---- CHẾ ĐỘ TẠO ẢNH ----
         initCreateMode();
     }
 
-    /* =========================================================
-       CÁC HÀM XỬ LÝ CHẾ ĐỘ TẠO ẢNH (CREATE MODE)
-       ========================================================= */
     let cropper, currentRecipient = "";
 
     function getDigitalDate() {
@@ -200,20 +177,31 @@
             const canvas = cropper.getCroppedCanvas({ width: 600, height: 800 });
             const croppedFile = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.9));
             
-            const fileName = `instax_${Date.now()}_${Math.random().toString(36).substring(2)}.jpg`;
+            // TẠO MÃ NGẮN 8 KÝ TỰ Ở ĐÂY
+            const shortId = Math.random().toString(36).substring(2, 10).toUpperCase();
+
+            const fileName = `instax_${Date.now()}_${shortId}.jpg`;
             await mySupabase.storage.from('polaroid_images').upload(fileName, croppedFile);
             const { data: pUrl } = mySupabase.storage.from('polaroid_images').getPublicUrl(fileName);
 
-            const { data: dbData } = await mySupabase.from('polaroids').insert([{ sender, recipient, message, image_url: pUrl.publicUrl }]).select();
+            // THÊM CỘT short_id VÀO DATABASE
+            const { data: dbData } = await mySupabase.from('polaroids').insert([{ 
+                sender, 
+                recipient, 
+                message, 
+                image_url: pUrl.publicUrl,
+                short_id: shortId // LƯU MÃ NGẮN LÊN DB
+            }]).select();
             
-            const pId = dbData[0].id; const shortId = pId.substring(0, 8); currentRecipient = recipient;
-            const fullQRUrl = `${CURRENT_URL}?id=${pId}`; // QR Code dùng URL động
+            const pId = dbData[0].id; 
+            currentRecipient = recipient;
+            const fullQRUrl = `${CURRENT_URL}?id=${pId}`; 
 
-            // Update UI
+            // Update UI (Sử dụng mã shortId mới)
             document.getElementById('preview-img').src = canvas.toDataURL("image/jpeg", 0.8);
             document.getElementById('prev-recipient').innerText = `To: ${recipient}`;
             document.getElementById('prev-sender').innerText = `From: ${sender}`;
-            document.getElementById('prev-digital').innerText = `${getDigitalDate()} // ID:${shortId.toUpperCase()}`;
+            document.getElementById('prev-digital').innerText = `${getDigitalDate()} // ID:${shortId}`;
             JsBarcode("#prev-barcode", shortId, { height: 28, width: 1.2, displayValue: false, margin: 0, lineColor: "#111" });
             document.getElementById('prev-qr-code').innerHTML = ""; 
             new QRCode(document.getElementById("prev-qr-code"), { text: fullQRUrl, width: 50, height: 50, colorDark : "#111", colorLight : "#fff", correctLevel : QRCode.CorrectLevel.H });
@@ -222,7 +210,7 @@
             document.getElementById('uploaded-img').src = canvas.toDataURL("image/jpeg", 1.0);
             document.getElementById('export-recipient').innerText = `To: ${recipient}`;
             document.getElementById('export-sender').innerText = `From: ${sender}`;
-            document.getElementById('export-digital').innerText = `${getDigitalDate()} // ID:${shortId.toUpperCase()}`;
+            document.getElementById('export-digital').innerText = `${getDigitalDate()} // ID:${shortId}`;
             JsBarcode("#export-barcode", shortId, { height: 40, width: 1.5, displayValue: false, margin: 0, lineColor: "#111" });
             document.getElementById('export-qr-code').innerHTML = ""; 
             new QRCode(document.getElementById("export-qr-code"), { text: fullQRUrl, width: 65, height: 65, colorDark : "#111", colorLight : "#fff", correctLevel : QRCode.CorrectLevel.H });
@@ -245,11 +233,7 @@
 
     function backToEdit() { document.getElementById('input-section').style.display = 'block'; document.getElementById('preview-section').style.display = 'none'; }
 
-    /* =========================================================
-       CÁC HÀM XỬ LÝ CHẾ ĐỘ AR CAMERA
-       ========================================================= */
     function bootARSystem(id) {
-        // Tải thư viện A-Frame & AR.js động (Chỉ tải khi có ID)
         const aframeScript = document.createElement('script');
         aframeScript.src = "https://aframe.io/releases/1.2.0/aframe.min.js";
         aframeScript.onload = () => {
@@ -272,7 +256,6 @@
             const { data, error } = await mySupabase.from('polaroids').select('message, sender').eq('id', id).single();
             if (error || !data) throw new Error("Không tìm thấy dữ liệu");
 
-            // Bơm cấu trúc 3D vào HTML
             document.getElementById('ar-scene-container').innerHTML = `
                 <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false; trackingMethod: best;">
                     <a-marker preset="hiro" id="ar-marker">
@@ -290,7 +273,6 @@
             statusText.innerText = "Sẵn sàng! Hướng camera vào mã Marker.";
             statusIcon.style.backgroundColor = "#ffdd00"; statusIcon.style.boxShadow = "0 0 10px #ffdd00";
 
-            // Bắt sự kiện quét thành công (Chờ 1s để DOM dựng xong thẻ A-Frame)
             setTimeout(() => {
                 const marker = document.getElementById('ar-marker');
                 if(marker) {
