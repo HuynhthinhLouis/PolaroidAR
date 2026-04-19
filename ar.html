@@ -3,185 +3,227 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Thiết kế Polaroid</title>
+    <title>AR Scanner Pro - Barcode to AR</title>
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
-
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Inter:wght@400;600;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 
     <style>
-        :root { --primary: #111; --bg: #f4f4f9; }
-        body { font-family: 'Inter', sans-serif; margin: 0; padding: 0; background: var(--bg); color: #333; display: flex; flex-direction: column; align-items: center; padding: 20px 10px; min-height: 100vh; }
+        body { margin: 0; overflow: hidden; background: #000; font-family: 'Inter', sans-serif; }
         
-        .form-container { background: rgba(255, 255, 255, 0.95); padding: 25px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); margin-bottom: 20px; width: 100%; max-width: 400px; box-sizing: border-box; }
-        .form-container h2 { text-align: center; margin-top: 0; margin-bottom: 20px; color: var(--primary); font-weight: 600; }
-        .input-group { margin-bottom: 12px; }
-        input[type="file"], input[type="text"], textarea { width: 100%; box-sizing: border-box; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-family: 'Inter', sans-serif; font-size: 16px; background: #fafafa; }
+        /* Giao diện Scanner tầng trên */
+        .fullscreen-scanner { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 10; transition: opacity 0.5s; }
+        .scan-line-full { width: 100%; height: 3px; background: #00ffcc; box-shadow: 0 0 30px 8px rgba(0,255,204,0.6); position: absolute; top: -10px; animation: scanFull 2.5s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
+        @keyframes scanFull { 0% { top: 0; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { top: 100vh; opacity: 0; } }
         
-        .btn-submit, .btn-secondary { width: 100%; padding: 14px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 16px; transition: 0.3s; margin-top: 10px; }
-        .btn-submit { background: var(--primary); color: white; }
-        .btn-submit:hover { background: #333; }
-        .btn-submit:disabled { background: #999; cursor: not-allowed; }
-        .btn-secondary { background: #fff; border: 2px solid var(--primary); color: var(--primary); }
+        .hud-corner { position: absolute; width: 40px; height: 40px; border-color: rgba(0, 255, 204, 0.5); border-style: solid; }
+        .top-left { top: 30px; left: 30px; border-width: 3px 0 0 3px; }
+        .top-right { top: 30px; right: 30px; border-width: 3px 3px 0 0; }
+        .bottom-left { bottom: 120px; left: 30px; border-width: 0 0 3px 3px; }
+        .bottom-right { bottom: 120px; right: 30px; border-width: 0 3px 3px 0; }
         
-        .crop-container { display: none; width: 100%; height: 350px; margin-bottom: 15px; background: #222; border-radius: 8px; overflow: hidden; }
-        .crop-container img { max-width: 100%; display: block; }
-        .crop-hint { text-align: center; font-size: 12px; color: #666; margin-top: -10px; margin-bottom: 15px; display: none; }
-
-        #preview-section { display: none; width: 100%; max-width: 360px; animation: fadeIn 0.4s; }
-        .instax-preview { width: 100%; background: #fcfcfc; padding: 18px 18px 85px 18px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); position: relative; box-sizing: border-box; margin: 0 auto 20px auto; }
-        .instax-preview img.photo { width: 100%; aspect-ratio: 3/4; object-fit: cover; background: #222; display: block; box-shadow: inset 0 0 5px rgba(0,0,0,0.2); }
-        .info { position: absolute; bottom: 35px; left: 20px; font-family: 'Caveat', cursive; font-size: 24px; color: #1a1a1a; line-height: 1.1; transform: rotate(-2deg); }
-        .info .sender { font-size: 18px; color: #444; }
-        .digital-font { font-family: 'Share Tech Mono', monospace; font-size: 12px; color: #666; position: absolute; bottom: 12px; left: 20px; letter-spacing: 0.5px; }
-        .preview-codes { position: absolute; bottom: 12px; right: 18px; display: flex; align-items: flex-end; gap: 8px; }
-        #prev-barcode { height: 28px; margin-bottom: 2px;}
-        .qr-wrapper { display: flex; flex-direction: column; align-items: center; }
-        #prev-qr-code { border: 2px solid #111; padding: 2px; background: white; } 
-        .scan-text { font-family: 'Inter', sans-serif; font-size: 8px; font-weight: 800; letter-spacing: 1px; margin-top: 3px; color: #111;}
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        #polaroid-wrapper { position: absolute; top: -9999px; left: -9999px; }
-        #polaroid-frame { width: 400px; background: #fcfcfc; padding: 20px 20px 100px 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); position: relative; box-sizing: border-box; }
-        #uploaded-img { width: 100%; aspect-ratio: 3/4; object-fit: cover; background: #222; display: block; }
-        .export-info { position: absolute; bottom: 40px; left: 25px; font-family: 'Caveat', cursive; font-size: 32px; color: #1a1a1a; line-height: 1.1; transform: rotate(-2deg); }
-        .export-info .sender { font-size: 24px; color: #444; }
-        .export-digital { font-family: 'Share Tech Mono', monospace; font-size: 14px; color: #666; position: absolute; bottom: 15px; left: 25px; }
-        .export-codes { position: absolute; bottom: 15px; right: 20px; display: flex; align-items: flex-end; gap: 12px; }
-        #export-barcode { height: 40px; margin-bottom: 2px;}
-        #export-qr-code { border: 3px solid #111; padding: 2px; background: white; } 
-        .export-scan-text { font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 800; letter-spacing: 1px; margin-top: 4px; color: #111;}
+        /* Status UI */
+        .status-wrapper { position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); z-index: 999; width: 85%; max-width: 350px; }
+        #status-ui { background: rgba(10, 10, 15, 0.8); backdrop-filter: blur(15px); border: 1px solid rgba(0,255,204,0.3); color: #fff; padding: 15px; border-radius: 20px; text-align: center; box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
+        .icon-pulse { width: 12px; height: 12px; background-color: #ffdd00; border-radius: 50%; display: inline-block; margin-right: 8px; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { transform: scale(0.8); opacity: 0.5; } 50% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(0.8); opacity: 0.5; } }
+        
+        /* Ẩn nút VR mặc định của A-Frame */
+        .a-enter-vr { display: none !important; }
+        canvas.drawingBuffer { position: absolute; left: 0; top: 0; opacity: 0.5; } /* Debug barcode nếu cần */
     </style>
 </head>
 <body>
 
-    <div class="form-container" id="input-section">
-        <h2>Thiết Kế Polaroid</h2>
-        <input type="file" id="imageInput" accept="image/*">
-        <div class="crop-container" id="cropContainer"><img id="imageToCrop" src="" alt=""></div>
-        <div class="crop-hint" id="cropHint">💡 Chạm 2 ngón tay để thu phóng, kéo để di chuyển</div>
-        
-        <div class="input-group"><input type="text" id="recipient" placeholder="Tên người nhận"></div>
-        <div class="input-group"><input type="text" id="sender" placeholder="Tên người tặng"></div>
-        <div class="input-group"><textarea id="message" rows="3" placeholder="Viết tâm thư ẩn vào đây..."></textarea></div>
-        
-        <button class="btn-submit" id="btn-preview" onclick="createAndPreviewPolaroid()">Tạo & Xem trước Polaroid</button>
+    <div class="fullscreen-scanner" id="fs-scanner">
+        <div class="scan-line-full"></div>
+        <div class="hud-corner top-left"></div><div class="hud-corner top-right"></div>
+        <div class="hud-corner bottom-left"></div><div class="hud-corner bottom-right"></div>
     </div>
-
-    <div id="preview-section">
-        <div class="instax-preview">
-            <img class="photo" id="preview-img" src="" alt="Preview">
-            <div class="info">
-                <div id="prev-recipient"></div><div class="sender" id="prev-sender"></div>
-            </div>
-            <div class="digital-font" id="prev-digital"></div>
-            <div class="preview-codes">
-                <svg id="prev-barcode"></svg>
-                <div class="qr-wrapper"><div id="prev-qr-code"></div><div class="scan-text">SCAN ME</div></div>
-            </div>
-        </div>
-        <button class="btn-submit" id="btn-download" onclick="downloadPolaroid()">Xác nhận & Tải về máy</button>
-        <button class="btn-secondary" onclick="backToEdit()">Tạo tấm khác</button>
-    </div>
-
-    <div id="polaroid-wrapper">
-        <div id="polaroid-frame">
-            <img id="uploaded-img" src="" alt="">
-            <div class="export-info"><div id="export-recipient"></div><div class="sender" id="export-sender"></div></div>
-            <div class="export-digital" id="export-digital"></div>
-            <div class="export-codes">
-                <svg id="export-barcode"></svg>
-                <div class="qr-wrapper"><div id="export-qr-code"></div><div class="export-scan-text">SCAN ME</div></div>
-            </div>
+    
+    <div class="status-wrapper">
+        <div id="status-ui">
+            <div class="icon-pulse" id="status-icon"></div>
+            <span id="status-text">ĐANG KHỞI TẠO CAMERA...</span>
         </div>
     </div>
+    
+    <div id="ar-scene-container"></div>
 
 <script>
+    // 1. Cấu hình Supabase
     const supabaseUrl = 'https://ohnoowsqmyryipfresae.supabase.co';
     const supabaseKey = 'sb_publishable_noPrqgubuZS1dgUPlsnOKw_aOnRdWN0';
     const mySupabase = window.supabase.createClient(supabaseUrl, supabaseKey);
-    
-    // --- BẢN VÁ CHO GITHUB PAGES ---
-    // Loại bỏ các query parameter hoặc dấu # nếu có, sau đó tự động chèn 'ar.html'
-    const currentUrl = window.location.href.split('?')[0].split('#')[0];
-    const basePath = currentUrl.replace(/\/?(index\.html)?$/, '/'); 
-    const AR_BASE_URL = basePath + 'ar.html';
-    // --------------------------------
 
-    let cropper, currentRecipient = "";
+    const statusText = document.getElementById('status-text');
+    const statusIcon = document.getElementById('status-icon');
+    const scannerUI = document.getElementById('fs-scanner');
 
-    function getDigitalDate() { const d = new Date(); return `${d.getFullYear()}.${(d.getMonth()+1).toString().padStart(2,'0')}.${d.getDate().toString().padStart(2,'0')}`; }
+    // Khởi động trình quét mã vạch khi tải trang
+    window.onload = () => {
+        startBarcodeScanner();
+    };
 
-    document.getElementById('imageInput').addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (file) {
-            document.getElementById('imageToCrop').src = URL.createObjectURL(file);
-            document.getElementById('cropContainer').style.display = 'block';
-            document.getElementById('cropHint').style.display = 'block';
-            if (cropper) cropper.destroy();
-            cropper = new Cropper(document.getElementById('imageToCrop'), { aspectRatio: 3 / 4, viewMode: 1, dragMode: 'move', zoomable: true, scalable: true, cropBoxMovable: false, cropBoxResizable: false, toggleDragModeOnDblclick: false });
-        }
-    });
+    // 2. Hàm Quét Mã Vạch (Barcode Scanner)
+    function startBarcodeScanner() {
+        statusText.innerText = "HÃY QUÉT MÃ VẠCH TRÊN ẢNH";
+        
+        Quagga.init({
+            inputStream: {
+                name: "Live",
+                type: "LiveStream",
+                target: document.body,
+                constraints: { facingMode: "environment" }
+            },
+            decoder: {
+                readers: ["code_128_reader"] // Định dạng khớp với file tạo Polaroid
+            }
+        }, (err) => {
+            if (err) {
+                statusText.innerText = "LỖI CAMERA!";
+                return;
+            }
+            Quagga.start();
+        });
 
-    async function createAndPreviewPolaroid() {
-        const sender = document.getElementById('sender').value, recipient = document.getElementById('recipient').value, message = document.getElementById('message').value;
-        if(!cropper || !sender || !recipient || !message) return alert("Vui lòng điền đủ thông tin!"); 
-
-        const btn = document.getElementById('btn-preview'); btn.innerText = "Đang mã hóa dữ liệu..."; btn.disabled = true;
-
-        try {
-            const canvas = cropper.getCroppedCanvas({ width: 600, height: 800 });
-            const croppedFile = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.9));
-            
-            const fileName = `instax_${Date.now()}_${Math.random().toString(36).substring(2)}.jpg`;
-            await mySupabase.storage.from('polaroid_images').upload(fileName, croppedFile);
-            const { data: pUrl } = mySupabase.storage.from('polaroid_images').getPublicUrl(fileName);
-
-            const { data: dbData } = await mySupabase.from('polaroids').insert([{ sender, recipient, message, image_url: pUrl.publicUrl }]).select();
-            
-            const pId = dbData[0].id; const shortId = pId.substring(0, 8); currentRecipient = recipient;
-            
-            // Link QR giờ đây an toàn tuyệt đối trên GitHub Pages
-            const fullQRUrl = `${AR_BASE_URL}?id=${pId}`;
-
-            // Preview UI
-            document.getElementById('preview-img').src = canvas.toDataURL("image/jpeg", 0.8);
-            document.getElementById('prev-recipient').innerText = `To: ${recipient}`; document.getElementById('prev-sender').innerText = `From: ${sender}`;
-            document.getElementById('prev-digital').innerText = `${getDigitalDate()} // ID:${shortId.toUpperCase()}`;
-            JsBarcode("#prev-barcode", shortId, { height: 28, width: 1.2, displayValue: false, margin: 0, lineColor: "#111" });
-            document.getElementById('prev-qr-code').innerHTML = ""; 
-            new QRCode(document.getElementById("prev-qr-code"), { text: fullQRUrl, width: 50, height: 50, colorDark : "#111", colorLight : "#fff", correctLevel : QRCode.CorrectLevel.H });
-
-            // Export UI
-            document.getElementById('uploaded-img').src = canvas.toDataURL("image/jpeg", 1.0);
-            document.getElementById('export-recipient').innerText = `To: ${recipient}`; document.getElementById('export-sender').innerText = `From: ${sender}`;
-            document.getElementById('export-digital').innerText = `${getDigitalDate()} // ID:${shortId.toUpperCase()}`;
-            JsBarcode("#export-barcode", shortId, { height: 40, width: 1.5, displayValue: false, margin: 0, lineColor: "#111" });
-            document.getElementById('export-qr-code').innerHTML = ""; 
-            new QRCode(document.getElementById("export-qr-code"), { text: fullQRUrl, width: 65, height: 65, colorDark : "#111", colorLight : "#fff", correctLevel : QRCode.CorrectLevel.H });
-
-            document.getElementById('input-section').style.display = 'none'; document.getElementById('preview-section').style.display = 'block'; window.scrollTo(0, 0);
-
-        } catch (error) { alert("Lỗi: " + error.message); } 
-        finally { btn.innerText = "Tạo & Xem trước Polaroid"; btn.disabled = false; }
-    }
-
-    function downloadPolaroid() {
-        const btn = document.getElementById('btn-download'); btn.innerText = "Đang lưu ảnh..."; btn.disabled = true;
-        html2canvas(document.getElementById('polaroid-frame'), { scale: 3, useCORS: true, backgroundColor: null }).then(canvas => {
-            let link = document.createElement('a'); link.download = `Polaroid_${currentRecipient}.png`; link.href = canvas.toDataURL("image/png"); link.click();
-            btn.innerText = "Đã tải về!"; setTimeout(() => { btn.innerText = "Xác nhận & Tải về máy"; btn.disabled = false; }, 2000);
+        Quagga.onDetected((result) => {
+            const code = result.codeResult.code;
+            if (code) {
+                Quagga.stop();
+                validateIdAndLoadAR(code);
+            }
         });
     }
 
-    function backToEdit() { document.getElementById('input-section').style.display = 'block'; document.getElementById('preview-section').style.display = 'none'; }
+    // 3. Kiểm tra ID và lấy dữ liệu từ Supabase
+    async function validateIdAndLoadAR(scannedId) {
+        statusText.innerText = `ĐÃ THẤY ID: ${scannedId}. ĐANG TÌM...`;
+        statusIcon.style.backgroundColor = "#00ffcc";
+
+        try {
+            // Vì mã vạch chỉ chứa 8 ký tự đầu của UUID, dùng ilike để tìm kiếm
+            const { data, error } = await mySupabase
+                .from('polaroids')
+                .select('message, sender')
+                .filter('id', 'ilike', `${scannedId}%`)
+                .single();
+
+            if (error || !data) throw new Error("Không tìm thấy");
+
+            statusText.innerText = "ĐANG TẢI THƯ VIỆN AR...";
+            loadARScripts(data);
+
+        } catch (err) {
+            statusText.innerText = "ID KHÔNG HỢP LỆ! THỬ LẠI...";
+            statusIcon.style.backgroundColor = "#ff3333";
+            setTimeout(() => startBarcodeScanner(), 2000);
+        }
+    }
+
+    // 4. Tải thư viện A-Frame & AR.js động
+    function loadARScripts(dbData) {
+        const aframe = document.createElement('script');
+        aframe.src = "https://aframe.io/releases/1.2.0/aframe.min.js";
+        aframe.onload = () => {
+            registerParticleComponent();
+            const arjs = document.createElement('script');
+            arjs.src = "https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js";
+            arjs.onload = () => buildARScene(dbData);
+            document.head.appendChild(arjs);
+        };
+        document.head.appendChild(aframe);
+    }
+
+    // 5. Component hiệu ứng hạt (Hologram Assembly)
+    function registerParticleComponent() {
+        AFRAME.registerComponent('data-assembler', {
+            schema: { targetId: {type: 'string'} },
+            init: function() { this.assembled = false; },
+            assemble: function() {
+                if(this.assembled) return;
+                this.assembled = true;
+                const targetEl = document.getElementById(this.data.targetId);
+                
+                // Tạo 60 hạt bay từ ngoài vào
+                for(let i=0; i<60; i++){
+                    let p = document.createElement('a-plane');
+                    let size = Math.random() * 0.12 + 0.03;
+                    p.setAttribute('width', size); p.setAttribute('height', size/2);
+                    p.setAttribute('color', Math.random() > 0.4 ? '#00ffcc' : '#ffffff');
+                    p.setAttribute('material', 'shader: flat; opacity: 0.8; side: double');
+                    
+                    let r = 2 + Math.random() * 2;
+                    let angle = Math.random() * Math.PI * 2;
+                    p.setAttribute('position', `${r * Math.cos(angle)} ${1 + Math.random()*3} ${r * Math.sin(angle)}`);
+                    
+                    let dur = 800 + Math.random() * 700;
+                    p.setAttribute('animation__pos', `property: position; to: 0 0.2 0; dur: ${dur}; easing: easeInExpo`);
+                    p.setAttribute('animation__scale', `property: scale; to: 0 0 0; dur: ${dur}; easing: easeInExpo`);
+                    
+                    this.el.appendChild(p);
+                    setTimeout(() => { if(p.parentNode) p.parentNode.removeChild(p); }, dur + 50);
+                }
+
+                setTimeout(() => {
+                    targetEl.setAttribute('visible', 'true');
+                    targetEl.setAttribute('animation', 'property: scale; from: 0 0 0; to: 1 1 1; dur: 1000; easing: easeOutElastic');
+                }, 1300);
+            },
+            reset: function() {
+                this.assembled = false;
+                const targetEl = document.getElementById(this.data.targetId);
+                targetEl.setAttribute('visible', 'false');
+                targetEl.setAttribute('scale', '0 0 0');
+                while(this.el.firstChild) { this.el.removeChild(this.el.firstChild); }
+            }
+        });
+    }
+
+    // 6. Dựng bối cảnh AR
+    function buildARScene(data) {
+        // Xóa camera cũ của Quagga nếu cần (AR.js sẽ tự chiếm quyền camera)
+        const video = document.querySelector('video');
+        if (video) video.remove();
+
+        document.getElementById('ar-scene-container').innerHTML = `
+            <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
+                <a-marker preset="hiro" id="ar-marker">
+                    <a-entity id="particle-core" data-assembler="targetId: hologram-msg"></a-entity>
+                    <a-entity id="hologram-msg" visible="false" scale="0 0 0">
+                        <a-entity animation="property: position; from: 0 0.2 0; to: 0 0.4 0; dir: alternate; dur: 2000; loop: true; easing: easeInOutSine">
+                            <a-plane position="0 0 -0.05" rotation="-90 0 0" width="3.2" height="2.2" color="#000" opacity="0.9"></a-plane>
+                            <a-plane position="0 0.01 -0.05" rotation="-90 0 0" width="3.25" height="2.25" color="#00ffcc" opacity="0.4" material="wireframe: true"></a-plane>
+                            <a-text value="FROM: ${data.sender.toUpperCase()}" color="#00ffcc" position="0 0.1 -0.7" rotation="-90 0 0" align="center" width="4"></a-text>
+                            <a-text value="${data.message}" color="#FFF" position="0 0.1 0.2" rotation="-90 0 0" align="center" width="3" wrap-count="25"></a-text>
+                        </a-entity>
+                    </a-entity>
+                </a-marker>
+                <a-entity camera></a-entity>
+            </a-scene>
+        `;
+
+        statusText.innerText = "SẴN SÀNG! HÃY QUÉT MÃ HIRO";
+        statusIcon.style.backgroundColor = "#ffdd00";
+
+        setTimeout(() => {
+            const marker = document.getElementById('ar-marker');
+            const pCore = document.getElementById('particle-core');
+            
+            marker.addEventListener('markerFound', () => {
+                statusText.innerText = "ĐANG GIẢI MÃ...";
+                scannerUI.style.opacity = "0";
+                if(pCore) pCore.components['data-assembler'].assemble();
+            });
+
+            marker.addEventListener('markerLost', () => {
+                statusText.innerText = "TÌM KIẾM HIRO MARKER...";
+                scannerUI.style.opacity = "1";
+                if(pCore) pCore.components['data-assembler'].reset();
+            });
+        }, 1000);
+    }
 </script>
 </body>
 </html>
