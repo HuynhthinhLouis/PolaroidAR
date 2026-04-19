@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AR Polaroid Scanner</title>
+    
+    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+
+    <style>
+        body { margin: 0; overflow: hidden; font-family: 'Inter', sans-serif; background-color: #000; }
+        
+        /* Ống ngắm Scanner */
+        .scanner-container {
+            position: absolute;
+            top: 45%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 280px; height: 280px;
+            z-index: 10;
+            pointer-events: none;
+        }
+        
+        /* 4 góc của ống ngắm */
+        .corner { position: absolute; width: 40px; height: 40px; border-color: rgba(255, 255, 255, 0.8); border-style: solid; border-radius: 4px; }
+        .tl { top: 0; left: 0; border-width: 4px 0 0 4px; }
+        .tr { top: 0; right: 0; border-width: 4px 4px 0 0; }
+        .bl { bottom: 0; left: 0; border-width: 0 0 4px 4px; }
+        .br { bottom: 0; right: 0; border-width: 0 4px 4px 0; }
+        
+        /* Tia laser quét */
+        .scan-line {
+            width: 100%; height: 2px;
+            background: #00ffcc;
+            position: absolute;
+            box-shadow: 0 0 15px 2px rgba(0, 255, 204, 0.6);
+            animation: scan 2.5s infinite cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        @keyframes scan { 0% { top: 0; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
+
+        /* Thanh thông báo (Glassmorphism) */
+        .status-wrapper {
+            position: absolute;
+            bottom: 40px; left: 50%;
+            transform: translateX(-50%);
+            z-index: 999; width: 85%; max-width: 350px;
+            text-align: center;
+        }
+
+        #status-ui {
+            background: rgba(20, 20, 20, 0.65);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #fff;
+            padding: 16px 20px;
+            border-radius: 16px;
+            font-size: 14px;
+            font-weight: 600;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+            display: flex; flex-direction: column; align-items: center; gap: 6px;
+        }
+
+        .icon-pulse {
+            width: 12px; height: 12px;
+            background-color: #00ffcc;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #00ffcc;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse { 0% { transform: scale(0.8); opacity: 0.5; } 50% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(0.8); opacity: 0.5; } }
+        
+        /* Ẩn logo AR.js mặc định */
+        .a-enter-vr { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <div class="scanner-container">
+        <div class="corner tl"></div><div class="corner tr"></div>
+        <div class="corner bl"></div><div class="corner br"></div>
+        <div class="scan-line" id="scan-line"></div>
+    </div>
+
+    <div class="status-wrapper">
+        <div id="status-ui">
+            <div class="icon-pulse" id="status-icon"></div>
+            <span id="status-text">Đang kết nối hệ thống...</span>
+        </div>
+    </div>
+
+    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false; trackingMethod: best; detectionMode: mono_and_matrix; matrixCodeType: 3x3;">
+        
+        <a-marker preset="hiro" id="ar-marker">
+            <a-entity position="0 0.2 0" animation="property: position; to: 0 0.5 0; dir: alternate; dur: 2000; loop: true; easing: easeInOutSine">
+                
+                <a-plane position="0 0.05 -0.05" rotation="-90 0 0" width="3.5" height="2.5" color="#0a0a0a" opacity="0.85" material="shader: flat"></a-plane>
+                
+                <a-plane position="0 0.06 -0.05" rotation="-90 0 0" width="3.55" height="2.55" color="#00ffcc" opacity="0.3" material="wireframe: true"></a-plane>
+
+                <a-text 
+                    id="ar-sender" 
+                    value="NEW MESSAGE" 
+                    color="#00ffcc" 
+                    position="0 0.1 -0.8" 
+                    rotation="-90 0 0" 
+                    align="center" 
+                    width="4"
+                    font="kelsonsans">
+                </a-text>
+
+                <a-text 
+                    id="ar-text" 
+                    value="Đang giải mã..." 
+                    color="#FFFFFF" 
+                    position="0 0.1 0.2" 
+                    rotation="-90 0 0" 
+                    align="center" 
+                    width="3.5"
+                    wrap-count="28"
+                    line-height="60"
+                    font="roboto">
+                </a-text>
+            </a-entity>
+        </a-marker>
+        
+        <a-entity camera></a-entity>
+    </a-scene>
+
+<script>
+    // Cấu hình Supabase của bạn
+    const supabaseUrl = 'https://ohnoowsqmyryipfresae.supabase.co';
+    const supabaseKey = 'sb_publishable_noPrqgubuZS1dgUPlsnOKw_aOnRdWN0';
+    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+    const statusText = document.getElementById('status-text');
+    const statusIcon = document.getElementById('status-icon');
+    const scanLine = document.getElementById('scan-line');
+    const marker = document.getElementById('ar-marker');
+
+    async function loadMessage() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const polaroidId = urlParams.get('id');
+
+        if (polaroidId) {
+            statusText.innerText = "Đang tìm tâm thư trong Database...";
+            
+            try {
+                const { data, error } = await supabase
+                    .from('polaroids')
+                    .select('message, sender')
+                    .eq('id', polaroidId)
+                    .single();
+
+                if (error) throw error;
+
+                if (data) {
+                    // Cập nhật nội dung 3D
+                    document.getElementById('ar-sender').setAttribute('value', `FROM: ${data.sender.toUpperCase()}`);
+                    document.getElementById('ar-text').setAttribute('value', data.message);
+                    
+                    statusText.innerText = "Đã tìm thấy! Hướng camera vào mã Marker.";
+                    statusIcon.style.backgroundColor = "#ffdd00"; // Đổi màu vàng chờ quét
+                    statusIcon.style.boxShadow = "0 0 10px #ffdd00";
+
+                } else {
+                    statusText.innerText = "Tâm thư này không tồn tại hoặc đã bị xóa.";
+                    statusIcon.style.backgroundColor = "#ff3333";
+                    scanLine.style.display = "none";
+                }
+            } catch (err) {
+                console.error(err);
+                statusText.innerText = "Lỗi kết nối: " + err.message;
+                statusIcon.style.backgroundColor = "#ff3333";
+            }
+        } else {
+            statusText.innerText = "Lỗi: Vui lòng dùng camera quét mã QR trên ảnh Polaroid trước.";
+            statusIcon.style.backgroundColor = "#ff3333";
+            scanLine.style.display = "none";
+        }
+    }
+
+    // Lắng nghe sự kiện khi Camera bắt được Marker
+    marker.addEventListener('markerFound', () => {
+        statusText.innerText = "Đã quét thành công!";
+        statusIcon.style.backgroundColor = "#00ffcc"; // Xanh lá
+        statusIcon.style.boxShadow = "0 0 15px #00ffcc";
+        scanLine.style.display = "none"; // Tắt tia laser đi cho đỡ rối mắt
+    });
+
+    // Lắng nghe sự kiện khi Camera mất dấu Marker
+    marker.addEventListener('markerLost', () => {
+        statusText.innerText = "Mất dấu. Hãy hướng camera lại vào Marker.";
+        statusIcon.style.backgroundColor = "#ffdd00";
+        scanLine.style.display = "block"; // Bật lại tia laser
+    });
+
+    // Bắt đầu chạy
+    loadMessage();
+</script>
+</body>
+</html>
