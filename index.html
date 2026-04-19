@@ -36,6 +36,7 @@
         .crop-container img { max-width: 100%; display: block; }
         .crop-hint { text-align: center; font-size: 12px; color: #666; margin-top: -10px; margin-bottom: 15px; display: none; }
 
+        /* Preview UI */
         #preview-section { display: none; width: 100%; max-width: 360px; animation: fadeIn 0.4s; }
         .instax-preview { width: 100%; background: #fcfcfc; padding: 18px 18px 85px 18px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); position: relative; box-sizing: border-box; margin: 0 auto 20px auto; }
         .instax-preview img.photo { width: 100%; aspect-ratio: 3/4; object-fit: cover; background: #222; display: block; box-shadow: inset 0 0 5px rgba(0,0,0,0.2); }
@@ -54,17 +55,18 @@
         
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
+        /* Khung Export Ẩn (Đã tối ưu phóng to mã Barcode & HIRO) */
         #polaroid-wrapper { position: absolute; top: -9999px; left: -9999px; }
-        #polaroid-frame { width: 400px; background: #fcfcfc; padding: 20px 20px 100px 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); position: relative; box-sizing: border-box; }
+        #polaroid-frame { width: 450px; background: #fcfcfc; padding: 25px 25px 120px 25px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); position: relative; box-sizing: border-box; }
         #uploaded-img { width: 100%; aspect-ratio: 3/4; object-fit: cover; background: #222; display: block; }
         .export-info { position: absolute; bottom: 40px; left: 25px; font-family: 'Caveat', cursive; font-size: 32px; color: #1a1a1a; line-height: 1.1; transform: rotate(-2deg); }
         .export-info .sender { font-size: 24px; color: #444; }
         .export-digital { font-family: 'Share Tech Mono', monospace; font-size: 14px; color: #666; position: absolute; bottom: 15px; left: 25px; }
-        .export-codes { position: absolute; bottom: 15px; right: 20px; display: flex; align-items: flex-end; gap: 12px; }
-        #export-barcode { height: 40px; margin-bottom: 2px;}
+        .export-codes { position: absolute; bottom: 20px; right: 25px; display: flex; align-items: flex-end; gap: 18px; }
+        #export-barcode { height: 50px; margin-bottom: 2px;}
+        .export-hiro-img { width: 85px; height: 85px; border: 4px solid #111; padding: 3px; background: white; object-fit: contain; }
         #export-qr-code { border: 3px solid #111; padding: 2px; background: white; } 
-        .export-scan-text { font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 800; letter-spacing: 1px; margin-top: 4px; color: #111;}
-        .export-hiro-img { width: 55px; height: 55px; border: 3px solid #111; padding: 2px; background: white; object-fit: contain; }
+        .export-scan-text { font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 800; letter-spacing: 1.5px; margin-top: 6px; color: #111;}
     </style>
 </head>
 <body>
@@ -124,7 +126,7 @@
     const supabaseUrl = 'https://ohnoowsqmyryipfresae.supabase.co';
     const supabaseKey = 'sb_publishable_noPrqgubuZS1dgUPlsnOKw_aOnRdWN0';
     const mySupabase = window.supabase.createClient(supabaseUrl, supabaseKey);
-    const CURRENT_URL = window.location.origin + window.location.pathname; // Bạn có thể đổi sang link app scanner của bạn
+    const CURRENT_URL = window.location.origin + window.location.pathname; 
 
     let cropper, currentRecipient = "";
 
@@ -159,7 +161,7 @@
             const canvas = cropper.getCroppedCanvas({ width: 600, height: 800 });
             const croppedFile = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.9));
             
-            // Tạo ID ngắn 8 ký tự
+            // Tạo mã ID ngắn 8 ký tự
             const shortId = Math.random().toString(36).substring(2, 10).toUpperCase();
 
             const fileName = `instax_${Date.now()}_${shortId}.jpg`;
@@ -174,7 +176,7 @@
             currentRecipient = recipient;
             const fullQRUrl = `${CURRENT_URL}?id=${pId}`; 
 
-            // Cập nhật UI
+            // Cập nhật giao diện Xem Trước
             document.getElementById('preview-img').src = canvas.toDataURL("image/jpeg", 0.8);
             document.getElementById('prev-recipient').innerText = `To: ${recipient}`;
             document.getElementById('prev-sender').innerText = `From: ${sender}`;
@@ -183,12 +185,12 @@
             document.getElementById('prev-qr-code').innerHTML = ""; 
             new QRCode(document.getElementById("prev-qr-code"), { text: fullQRUrl, width: 40, height: 40, colorDark : "#111", colorLight : "#fff", correctLevel : QRCode.CorrectLevel.H });
 
-            // Cập nhật khung tải ẩn
+            // Cập nhật giao diện Khung Ẩn Tải Về (Mã vạch nét đậm width: 2.0)
             document.getElementById('uploaded-img').src = canvas.toDataURL("image/jpeg", 1.0);
             document.getElementById('export-recipient').innerText = `To: ${recipient}`;
             document.getElementById('export-sender').innerText = `From: ${sender}`;
             document.getElementById('export-digital').innerText = `${getDigitalDate()} // ID:${shortId}`;
-            JsBarcode("#export-barcode", shortId, { height: 40, width: 1.5, displayValue: false, margin: 0, lineColor: "#111" });
+            JsBarcode("#export-barcode", shortId, { height: 50, width: 2.0, displayValue: false, margin: 0, lineColor: "#111" });
             document.getElementById('export-qr-code').innerHTML = ""; 
             new QRCode(document.getElementById("export-qr-code"), { text: fullQRUrl, width: 55, height: 55, colorDark : "#111", colorLight : "#fff", correctLevel : QRCode.CorrectLevel.H });
 
