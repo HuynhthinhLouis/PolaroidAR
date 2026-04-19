@@ -47,32 +47,37 @@
 
         .msg-header { width: 100%; text-align: center; margin-bottom: 20px; border-bottom: 1px solid rgba(62, 47, 37, 0.1); padding-bottom: 10px;}
         
-        /* Đổi tên người gửi/nhận sang Font Dancing Script */
         .msg-recipient, .msg-sender { font-family: 'Dancing Script', 'Caveat', cursive; color: var(--text-dark); }
         .msg-recipient { font-size: 28px; font-weight: 700; margin-bottom: 0;}
         .msg-sender { font-size: 22px; color: #7a614e; font-weight: 600;}
         
-        .msg-scroll-area {
-            width: 100%; max-height: 250px; overflow-y: auto; margin-bottom: 25px; padding: 0 5px; 
-        }
+        .msg-scroll-area { width: 100%; max-height: 250px; overflow-y: auto; margin-bottom: 25px; padding: 0 5px; }
         .msg-scroll-area::-webkit-scrollbar { width: 5px; }
         .msg-scroll-area::-webkit-scrollbar-track { background: transparent; }
         .msg-scroll-area::-webkit-scrollbar-thumb { background: #c8b495; border-radius: 10px; }
 
-        /* ĐÃ FIX: white-space giúp giữ nguyên dấu Enter (xuống dòng) của bức thư */
         .msg-text { 
-            font-family: 'Dancing Script', 'Caveat', cursive; 
-            font-size: 28px; 
-            color: var(--text-dark); 
-            line-height: 1.4; 
-            text-align: center; 
-            margin: 0;
-            white-space: pre-wrap; 
-            word-break: break-word; 
+            font-family: 'Dancing Script', 'Caveat', cursive; font-size: 28px; color: var(--text-dark); 
+            line-height: 1.4; text-align: center; margin: 0; white-space: pre-wrap; word-break: break-word; 
         }
         
         .btn-rescan { background: transparent; color: var(--text-dark); border: 2px solid var(--text-dark); padding: 14px 30px; border-radius: 8px; font-family: 'Be Vietnam Pro', sans-serif; font-weight: 700; font-size: 14px; cursor: pointer; transition: 0.2s; width: 100%; }
         .btn-rescan:active { background: rgba(62, 47, 37, 0.05); transform: scale(0.96); }
+
+        /* CHỮ KÝ BẢN QUYỀN TRÊN MÀN HÌNH QUÉT */
+        .credit-footer {
+            position: absolute;
+            bottom: 15px;
+            width: 100%;
+            text-align: center;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.65);
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            z-index: 10;
+            pointer-events: none;
+            text-shadow: 0 1px 4px rgba(0,0,0,0.9);
+        }
     </style>
 </head>
 <body>
@@ -105,6 +110,8 @@
         </div>
         <button class="btn-rescan" onclick="resetScanner()">Đóng & Quét Thẻ Khác</button>
     </div>
+
+    <div class="credit-footer">Tạo thành và phát triển bởi Huỳnh Hưng Thịnh</div>
 
 <script>
     const supabaseUrl = 'https://ohnoowsqmyryipfresae.supabase.co';
@@ -174,7 +181,6 @@
             document.getElementById('card-sender').innerText = `Ký tên: ${data.sender}`;
             document.getElementById('card-message').innerText = data.message;
             
-            // Ép Scroll bar về lại đầu trang khi mở thư mới
             scrollArea.scrollTop = 0;
 
             setTimeout(() => {
