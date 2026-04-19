@@ -10,12 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700;800&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
 
     <style>
-        :root { 
-            --text-dark: #3e2f25; 
-            --accent: #d4a373; 
-            --bg-overlay: rgba(62, 47, 37, 0.75);
-            --card-bg: #fbf7f0;
-        }
+        :root { --text-dark: #3e2f25; --accent: #d4a373; --bg-overlay: rgba(62, 47, 37, 0.75); --card-bg: #fbf7f0;}
         body { margin: 0; overflow: hidden; background: #111; font-family: 'Be Vietnam Pro', sans-serif; }
         
         #interactive.viewport { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; }
@@ -29,25 +24,10 @@
         .freeze-overlay { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--bg-overlay); backdrop-filter: blur(10px); z-index: 5; opacity: 0; pointer-events: none; transition: opacity 0.4s ease; }
         .freeze-overlay.active { opacity: 1; pointer-events: all; }
 
-        /* MẶT NẠ KHUNG POLAROID CHUẨN XÁC */
-        .camera-mask {
-            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            z-index: 10; pointer-events: none; overflow: hidden; transition: opacity 0.4s;
-        }
+        .camera-mask { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10; pointer-events: none; overflow: hidden; transition: opacity 0.4s; }
         
-        .polaroid-guide {
-            width: 78vw; max-width: 320px; aspect-ratio: 3 / 4.2; 
-            border: 3px solid rgba(255, 255, 255, 0.8); border-radius: 8px;
-            box-shadow: 0 0 0 4000px rgba(20, 15, 10, 0.7); /* Làm mờ vạn vật xung quanh */
-            display: flex; flex-direction: column; overflow: hidden;
-            background: rgba(255,255,255,0.05);
-        }
-        
-        /* Phần chứa ảnh */
+        .polaroid-guide { width: 78vw; max-width: 320px; aspect-ratio: 3 / 4.2; border: 3px solid rgba(255, 255, 255, 0.8); border-radius: 8px; box-shadow: 0 0 0 4000px rgba(20, 15, 10, 0.7); display: flex; flex-direction: column; overflow: hidden; background: rgba(255,255,255,0.05); }
         .photo-guide { flex: 1; position: relative; border-bottom: 2px dashed rgba(255,255,255,0.4);}
-        
-        /* Phần chứa mã vạch (Chỉ quét ở đây) */
         .barcode-guide { height: 22%; background: rgba(212, 163, 115, 0.2); position: relative; display: flex; align-items: center; justify-content: center;}
         .laser-line { position: absolute; width: 100%; height: 3px; background: var(--accent); box-shadow: 0 0 10px 2px var(--accent); animation: scanLine 1.5s ease-in-out infinite alternate; }
         @keyframes scanLine { 0% { top: 10%; } 100% { top: 90%; } }
@@ -56,30 +36,35 @@
         .status-wrapper { position: absolute; top: 6vh; left: 50%; transform: translateX(-50%); z-index: 10; width: 90%; max-width: 350px; text-align: center; transition: opacity 0.3s;}
         #status-ui { background: var(--card-bg); color: var(--text-dark); padding: 12px 20px; border-radius: 25px; font-size: 14px; font-weight: 700; box-shadow: 0 5px 15px rgba(0,0,0,0.3); display: inline-block;}
         
-        /* THIỆP GIẤY BẬT LÊN */
         #message-card {
-            position: absolute; background: var(--card-bg); border-radius: 8px; padding: 35px 25px 25px 25px;
+            position: absolute; background: var(--card-bg); border-radius: 8px; padding: 30px 20px 25px 20px;
             box-shadow: 0 20px 50px rgba(0,0,0,0.6); z-index: 20; display: flex; flex-direction: column; align-items: center;
             opacity: 0; pointer-events: none; border: 1px solid #c8b495;
             transform-origin: center center; transform: translate(-50%, -50%) scale(0.7) translateY(20px);
             transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
         }
-        #message-card.show {
-            top: 50% !important; left: 50% !important;
-            transform: translate(-50%, -50%) scale(1) translateY(0) !important;
-            width: 85%; max-width: 360px; opacity: 1; pointer-events: all;
-        }
+        #message-card.show { top: 50% !important; left: 50% !important; transform: translate(-50%, -50%) scale(1) translateY(0) !important; width: 85%; max-width: 360px; opacity: 1; pointer-events: all; }
 
         .msg-header { width: 100%; text-align: center; margin-bottom: 20px; border-bottom: 1px solid rgba(62, 47, 37, 0.1); padding-bottom: 15px;}
         .msg-recipient { font-size: 18px; color: var(--text-dark); font-weight: 800; margin-bottom: 4px;}
         .msg-sender { font-size: 14px; color: #7a614e; font-weight: 600;}
         
-        .msg-text { font-family: 'Caveat', cursive; font-size: 32px; color: var(--text-dark); line-height: 1.3; text-align: center; margin: 0 0 30px 0;}
-        
-        .btn-rescan {
-            background: transparent; color: var(--text-dark); border: 2px solid var(--text-dark); padding: 14px 30px; border-radius: 8px; 
-            font-family: 'Be Vietnam Pro', sans-serif; font-weight: 700; font-size: 14px; cursor: pointer; transition: 0.2s; width: 100%;
+        /* KHU VỰC CUỘN THƯ (MỚI THÊM) */
+        .msg-scroll-area {
+            width: 100%;
+            max-height: 250px; /* Chiều cao tối đa trước khi xuất hiện thanh cuộn */
+            overflow-y: auto;
+            margin-bottom: 25px;
+            padding: 0 5px; /* Lùi vào xíu để không dính thanh cuộn */
         }
+        /* Custom thanh cuộn cho thẩm mỹ */
+        .msg-scroll-area::-webkit-scrollbar { width: 5px; }
+        .msg-scroll-area::-webkit-scrollbar-track { background: transparent; }
+        .msg-scroll-area::-webkit-scrollbar-thumb { background: #c8b495; border-radius: 10px; }
+
+        .msg-text { font-family: 'Caveat', cursive; font-size: 30px; color: var(--text-dark); line-height: 1.3; text-align: center; margin: 0;}
+        
+        .btn-rescan { background: transparent; color: var(--text-dark); border: 2px solid var(--text-dark); padding: 14px 30px; border-radius: 8px; font-family: 'Be Vietnam Pro', sans-serif; font-weight: 700; font-size: 14px; cursor: pointer; transition: 0.2s; width: 100%; }
         .btn-rescan:active { background: rgba(62, 47, 37, 0.05); transform: scale(0.96); }
     </style>
 </head>
@@ -108,7 +93,9 @@
             <div class="msg-recipient" id="card-recipient"></div>
             <div class="msg-sender" id="card-sender"></div>
         </div>
-        <p class="msg-text" id="card-message"></p>
+        <div class="msg-scroll-area" id="msg-scroll-area">
+            <p class="msg-text" id="card-message"></p>
+        </div>
         <button class="btn-rescan" onclick="resetScanner()">Đóng & Quét Thẻ Khác</button>
     </div>
 
@@ -123,6 +110,7 @@
     const messageCard = document.getElementById('message-card');
     const statusWrapper = document.getElementById('status-wrapper');
     const flashEffect = document.getElementById('flash');
+    const scrollArea = document.getElementById('msg-scroll-area');
 
     window.onload = () => { startScanner(); };
 
@@ -134,10 +122,7 @@
                 name: "Live",
                 type: "LiveStream",
                 target: document.querySelector('#interactive'),
-                constraints: { 
-                    facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 }, advanced: [{ focusMode: "continuous" }] 
-                },
-                // ÉP CAMERA CHỈ NHÌN PHẦN ĐÁY (Vùng đánh dấu mã vạch) -> TĂNG TỐC ĐỘ X3
+                constraints: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 }, advanced: [{ focusMode: "continuous" }] },
                 area: { top: "65%", bottom: "5%", left: "10%", right: "10%" }
             },
             locator: { patchSize: "large", halfSample: true },
@@ -152,7 +137,6 @@
         Quagga.onDetected((result) => {
             const code = result.codeResult.code;
             if (code && code.length === 6) { 
-                
                 Quagga.stop(); 
                 
                 flashEffect.classList.remove('trigger');
@@ -182,6 +166,9 @@
             document.getElementById('card-recipient').innerText = `Gửi tới: ${data.recipient}`;
             document.getElementById('card-sender').innerText = `Ký tên: ${data.sender}`;
             document.getElementById('card-message').innerText = data.message;
+            
+            // ÉP SCROLL BAR VỀ LẠI ĐẦU TRANG
+            scrollArea.scrollTop = 0;
 
             setTimeout(() => {
                 statusWrapper.style.opacity = '0';
