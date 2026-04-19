@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Vintage Gift Studio</title>
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -10,17 +10,17 @@
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700;800&family=Dancing+Script:wght@600;700&family=Caveat:wght@600;700&display=swap&subset=vietnamese" rel="stylesheet">
 
     <style>
-        /* TONE MÀU & HÌNH NỀN KRAFT */
         :root { 
             --text-dark: #3e2f25; 
             --card-bg: #fbf7f0; 
-            --accent: #8c6a50; 
+            --accent: #d4a373; 
             --border: #c8b495;
         }
         
@@ -28,7 +28,6 @@
             font-family: 'Be Vietnam Pro', sans-serif; 
             margin: 0; padding: 0; 
             color: var(--text-dark); 
-            /* Hình nền giấy Kraft thật */
             background-color: #d1bfae; 
             background-image: url('https://img.pikbest.com/wp/202343/kraft-paper-texture-textured-background-crumpled-for-a-rustic-look_9977268.jpg!bw700');
             background-size: cover;
@@ -38,7 +37,6 @@
         
         #app-create { display: flex; flex-direction: column; align-items: center; padding: 30px 15px; min-height: 100vh; }
         
-        /* Form Tạo Quà (Làm mờ nền xíu để chữ dễ đọc trên nền giấy nhàu) */
         .form-container { 
             background: rgba(251, 247, 240, 0.92); 
             backdrop-filter: blur(8px);
@@ -79,12 +77,41 @@
         .photo-wrapper { width: 100%; aspect-ratio: 3/4; overflow: hidden; border-radius: 2px; background: #222;}
         .photo-wrapper img { width: 100%; height: 100%; object-fit: cover; }
         
-        .polaroid-text { margin-top: 18px; text-align: center; display: flex; flex-direction: column; align-items: center;}
-        /* Font Dancing Script kết hợp Caveat hỗ trợ Tiếng Việt rất tốt */
+        /* Bố cục mới: Tên và QR cạnh nhau */
+        .polaroid-text-container {
+            margin-top: 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end; /* Căn lề dưới cho tên và QR */
+            width: 100%;
+            padding: 0 5px;
+        }
+        .names-and-hint {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start; /* Tên căn lề trái */
+            flex: 1;
+        }
         .handwriting { font-family: 'Dancing Script', 'Caveat', cursive; font-size: 32px; color: var(--text-dark); font-weight: 700; line-height: 1.2;}
-        .hint-text { font-size: 11px; color: var(--accent); letter-spacing: 2px; text-transform: uppercase; margin-top: 5px; margin-bottom: 5px; font-weight: 700;}
+        .hint-text { font-size: 11px; color: var(--accent); letter-spacing: 2px; text-transform: uppercase; margin-top: 5px; font-weight: 700;}
         
-        .barcode-container { width: 100%; display: flex; justify-content: center; mix-blend-mode: multiply;}
+        .qr-code-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center; /* QR và text căn giữa */
+            gap: 2px;
+            width: 70px;
+        }
+        #prev-qr-code {
+            width: 60px; height: 60px;
+            border: 2px solid var(--border);
+            padding: 3px; background: #fff;
+        }
+        .scan-me-text {
+            font-size: 10px; color: var(--accent); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+        }
+
+        .barcode-container { width: 100%; display: flex; justify-content: center; mix-blend-mode: multiply; margin-top: 5px;}
         #prev-barcode { width: 100% !important; height: 45px; }
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
@@ -94,19 +121,48 @@
         #export-frame { width: 450px; background: var(--card-bg); padding: 22px 22px 30px 22px; display: flex; flex-direction: column;}
         .export-photo { width: 100%; aspect-ratio: 3/4; border-radius: 2px; object-fit: cover; background: #222;}
         
-        .export-text { margin-top: 25px; text-align: center; }
+        .export-text-container {
+            margin-top: 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            width: 100%;
+            padding: 0 10px;
+        }
+        .export-names-and-hint {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            flex: 1;
+        }
         .export-handwriting { font-family: 'Dancing Script', 'Caveat', cursive; font-size: 42px; color: var(--text-dark); font-weight: 700;}
-        .export-hint { font-size: 13px; color: var(--accent); font-family: 'Be Vietnam Pro', sans-serif; letter-spacing: 2.5px; text-transform: uppercase; margin-top: 10px; margin-bottom: 8px; font-weight: 800;}
+        .export-hint { font-size: 13px; color: var(--accent); font-family: 'Be Vietnam Pro', sans-serif; letter-spacing: 2.5px; text-transform: uppercase; margin-top: 10px; font-weight: 800;}
         
-        .export-barcode-wrapper { width: 100%; display: flex; justify-content: center; mix-blend-mode: multiply;}
-        #export-barcode { width: 100% !important; height: 100px; } /* Cao và bự để quét xa */
+        .export-qr-code-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            width: 90px;
+        }
+        #export-qr-code {
+            width: 80px; height: 80px;
+            border: 3px solid var(--border);
+            padding: 5px; background: #fff;
+        }
+        .export-scan-me-text {
+            font-size: 13px; color: var(--accent); font-family: 'Be Vietnam Pro', sans-serif; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;
+        }
+
+        .export-barcode-wrapper { width: 100%; display: flex; justify-content: center; mix-blend-mode: multiply; margin-top: 10px;}
+        #export-barcode { width: 100% !important; height: 100px; } 
     </style>
 </head>
 <body>
 
     <div id="app-create">
         <div class="form-container" id="input-section">
-            <h2>Đóng Gói Kỷ Niệm 📦</h2>
+            <h2>Gói Gói Gén Kỷ Niệm 🎁</h2>
             <input type="file" id="imageInput" accept="image/*">
             <div class="crop-container" id="cropContainer"><img id="imageToCrop" src="" alt=""></div>
             
@@ -120,11 +176,17 @@
         <div id="preview-section">
             <div class="polaroid-card">
                 <div class="photo-wrapper"><img id="preview-img" src="" alt="Preview"></div>
-                <div class="polaroid-text">
-                    <div class="handwriting" id="prev-names"></div>
-                    <div class="hint-text">QUÉT MÃ ĐỂ MỞ THƯ</div>
-                    <div class="barcode-container"><svg id="prev-barcode"></svg></div>
+                <div class="polaroid-text-container">
+                    <div class="names-and-hint">
+                        <div class="handwriting" id="prev-names"></div>
+                        <div class="hint-text">QUÉT MÃ ĐỂ MỞ THƯ</div>
+                    </div>
+                    <div class="qr-code-wrapper">
+                        <div id="prev-qr-code"></div>
+                        <div class="scan-me-text">Scan me</div>
+                    </div>
                 </div>
+                <div class="barcode-container"><svg id="prev-barcode"></svg></div>
             </div>
             <button class="btn-submit" id="btn-download" onclick="downloadPolaroid()">Tải bản in nét cao</button>
             <button class="btn-secondary" onclick="backToEdit()">Tạo tấm khác</button>
@@ -133,11 +195,17 @@
         <div id="polaroid-wrapper">
             <div id="export-frame">
                 <img class="export-photo" id="uploaded-img" src="" alt="">
-                <div class="export-text">
-                    <div class="export-handwriting" id="export-names"></div>
-                    <div class="export-hint">SỬ DỤNG MÁY QUÉT ĐỂ MỞ THƯ</div>
-                    <div class="export-barcode-wrapper"><svg id="export-barcode"></svg></div>
+                <div class="export-text-container">
+                    <div class="export-names-and-hint">
+                        <div class="export-handwriting" id="export-names"></div>
+                        <div class="export-hint">SỬ DỤNG MÁY QUÉT ĐỂ MỞ THƯ</div>
+                    </div>
+                    <div class="export-qr-code-wrapper">
+                        <div id="export-qr-code"></div>
+                        <div class="export-scan-me-text">Scan me</div>
+                    </div>
                 </div>
+                <div class="export-barcode-wrapper"><svg id="export-barcode"></svg></div>
             </div>
         </div>
     </div>
@@ -187,19 +255,37 @@
                 sender, recipient, message, image_url: pUrl.publicUrl, short_id: shortId
             }]);
             
-            // Xử lý tên để làm tên file tải xuống
             currentFilename = recipient.replace(/[^a-zA-Z0-9]/gi, '_').toLowerCase();
-            
-            // Text hiển thị trên thẻ
             const displayNames = `${recipient} & ${sender}`;
 
+            // Preview UI (Barcode nét bự)
             document.getElementById('preview-img').src = canvas.toDataURL("image/jpeg", 0.5);
             document.getElementById('prev-names').innerText = displayNames;
             JsBarcode("#prev-barcode", shortId, { height: 45, width: 2.2, displayValue: false, margin: 0, lineColor: "#3e2f25", background: "transparent" });
 
+            // MỚI: Vẽ Mã QR Xem Trước
+            const qrUrl = "https://huynhthinhlouis.github.io/polaroidar/ar.html";
+            document.getElementById('prev-qr-code').innerHTML = ""; // Xóa QR cũ
+            new QRCode(document.getElementById("prev-qr-code"), {
+                text: qrUrl,
+                width: 60, height: 60,
+                colorDark : "#3e2f25", colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
+            });
+
+            // Export UI (Barcode bự đậm width: 5.5)
             document.getElementById('uploaded-img').src = canvas.toDataURL("image/jpeg", 1.0);
             document.getElementById('export-names').innerText = displayNames;
             JsBarcode("#export-barcode", shortId, { height: 100, width: 5.5, displayValue: false, margin: 0, lineColor: "#3e2f25", background: "transparent" });
+
+            // MỚI: Vẽ Mã QR Export (bự hơn)
+            document.getElementById('export-qr-code').innerHTML = ""; // Xóa QR cũ
+            new QRCode(document.getElementById("export-qr-code"), {
+                text: qrUrl,
+                width: 80, height: 80,
+                colorDark : "#3e2f25", colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
+            });
 
             document.getElementById('input-section').style.display = 'none';
             document.getElementById('preview-section').style.display = 'block';
@@ -212,7 +298,6 @@
     function downloadPolaroid() {
         const btn = document.getElementById('btn-download'); btn.innerText = "Đang lưu..."; btn.disabled = true;
         
-        // Timeout nhẹ để đảm bảo font viết tay đã render xong trước khi chụp ảnh màn hình
         setTimeout(() => {
             html2canvas(document.getElementById('export-frame'), { scale: 3, useCORS: true, backgroundColor: "#fbf7f0" }).then(canvas => {
                 let link = document.createElement('a'); link.download = `Polaroid_${currentFilename}.png`; link.href = canvas.toDataURL("image/png"); link.click();
