@@ -26,7 +26,7 @@
             background-size: cover; background-position: center; background-attachment: fixed;
         }
         
-        #app-create { display: flex; flex-direction: column; align-items: center; padding: 30px 15px; min-height: 100vh; }
+        #app-create { display: flex; flex-direction: column; align-items: center; padding: 30px 15px 10px 15px; min-height: 100vh; }
         
         .form-container { 
             background: rgba(251, 247, 240, 0.95); backdrop-filter: blur(8px);
@@ -35,7 +35,6 @@
         }
         .form-container h2 { text-align: center; margin-top: 0; margin-bottom: 20px; color: var(--text-dark); font-weight: 800; font-size: 24px;}
         
-        /* Box Hướng dẫn */
         .instruction-box { background: rgba(212, 163, 115, 0.15); border: 1px dashed var(--accent); padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 13px; line-height: 1.5; color: #5a4634; }
         .instruction-box h3 { margin: 0 0 8px 0; font-size: 14px; font-weight: 700; color: var(--text-dark); }
         .instruction-box ul { margin: 0; padding-left: 20px; }
@@ -96,6 +95,17 @@
 
         .export-barcode-wrapper { width: 100%; display: flex; justify-content: center; mix-blend-mode: multiply; margin-top: 10px;}
         #export-barcode { width: 100% !important; height: 100px; } 
+
+        /* CHỮ KÝ BẢN QUYỀN */
+        .credit-footer {
+            margin-top: auto; 
+            padding: 20px 0 10px 0;
+            text-align: center;
+            font-size: 13px;
+            color: #7a614e;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
     </style>
 </head>
 <body>
@@ -118,7 +128,8 @@
             
             <div class="input-group"><input type="text" id="recipient" placeholder="Gửi đến: (VD: Mây Trắng)"></div>
             <div class="input-group"><input type="text" id="sender" placeholder="Ký tên: (VD: Gió Chiều)"></div>
-            <div class="input-group"><textarea id="message" rows="4" placeholder="Viết tâm thư có dấu tiếng Việt thoải mái..."></textarea></div>
+            
+            <div class="input-group"><textarea id="message" rows="4" placeholder="Viết tâm thư tại đây"></textarea></div>
             
             <button class="btn-submit" id="btn-preview" onclick="createAndPreview()">Tạo Thẻ Polaroid</button>
         </div>
@@ -158,6 +169,8 @@
                 <div class="export-barcode-wrapper"><svg id="export-barcode"></svg></div>
             </div>
         </div>
+
+        <div class="credit-footer">Tạo thành và phát triển bởi Huỳnh Hưng Thịnh</div>
     </div>
 
 <script>
@@ -193,11 +206,8 @@
 
         try {
             const canvas = cropper.getCroppedCanvas({ width: 900, height: 1200 });
-            
             const shortId = Math.random().toString(36).substring(2, 8).toUpperCase();
             
-            // TỐI ƯU CỰC MẠNH: Bỏ hoàn toàn phần upload ảnh lên Supabase Storage.
-            // Chỉ lưu Text (người gửi, nhận, tâm thư) vào Database. Tốc độ cực nhanh & Không bao giờ tốn dung lượng!
             await mySupabase.from('polaroids').insert([{ 
                 sender, recipient, message, short_id: shortId
             }]);
@@ -205,7 +215,6 @@
             currentFilename = recipient.replace(/[^a-zA-Z0-9]/gi, '_').toLowerCase();
             const displayNames = `${recipient} & ${sender}`;
 
-            // Vẽ UI Xem Trước
             document.getElementById('preview-img').src = canvas.toDataURL("image/jpeg", 0.5);
             document.getElementById('prev-names').innerText = displayNames;
             JsBarcode("#prev-barcode", shortId, { height: 45, width: 2.2, displayValue: false, margin: 0, lineColor: "#3e2f25", background: "transparent" });
@@ -214,7 +223,6 @@
             document.getElementById('prev-qr-code').innerHTML = ""; 
             new QRCode(document.getElementById("prev-qr-code"), { text: qrUrl, width: 60, height: 60, colorDark : "#3e2f25", colorLight : "#ffffff", correctLevel : QRCode.CorrectLevel.H });
 
-            // Vẽ UI Tải Xuống
             document.getElementById('uploaded-img').src = canvas.toDataURL("image/jpeg", 1.0);
             document.getElementById('export-names').innerText = displayNames;
             JsBarcode("#export-barcode", shortId, { height: 100, width: 5.5, displayValue: false, margin: 0, lineColor: "#3e2f25", background: "transparent" });
