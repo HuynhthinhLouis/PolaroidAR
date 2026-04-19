@@ -62,7 +62,6 @@
     function startBarcodeScanner() {
         statusText.innerText = "HÃY QUÉT MÃ VẠCH TRÊN ẢNH";
         
-        // CẤU HÌNH CAMERA ÉP KHUNG HÌNH CAO NHẤT (CHỐNG MỜ)
         Quagga.init({
             inputStream: {
                 name: "Live",
@@ -76,32 +75,22 @@
                     advanced: [{ focusMode: "continuous" }] 
                 }
             },
-            locator: {
-                patchSize: "large", // Vùng lấy mẫu lớn hơn để quét từ xa
-                halfSample: false   // Tắt nén ảnh để nét 100%
-            },
+            locator: { patchSize: "large", halfSample: false },
             numOfWorkers: navigator.hardwareConcurrency || 4,
             decoder: { readers: ["code_128_reader"], multiple: false },
             locate: true 
         }, (err) => {
-            if (err) {
-                statusText.innerText = "LỖI CAMERA! HÃY CẤP QUYỀN.";
-                console.error(err);
-                return;
-            }
+            if (err) return statusText.innerText = "LỖI CAMERA! HÃY CẤP QUYỀN.";
             
-            // Fix tỷ lệ video hiển thị
             const videoEl = document.querySelector("video");
             if (videoEl) {
                 videoEl.style.objectFit = "cover";
                 videoEl.style.width = "100vw";
                 videoEl.style.height = "100vh";
                 videoEl.style.position = "absolute";
-                videoEl.style.top = "0";
-                videoEl.style.left = "0";
+                videoEl.style.top = "0"; videoEl.style.left = "0";
                 videoEl.style.zIndex = "1";
             }
-            
             Quagga.start();
         });
 
@@ -109,15 +98,23 @@
             const code = result.codeResult.code;
             if (code && code.length === 8) { 
                 Quagga.stop();
-                validateIdAndLoadAR(code);
+                
+                // FIX LỖI ĐÓNG BĂNG: Tắt hẳn luồng camera trước khi chuyển quyền cho AR.js
+                const videoEl = document.querySelector("video");
+                if (videoEl && videoEl.srcObject) {
+                    videoEl.srcObject.getTracks().forEach(track => track.stop());
+                    videoEl.remove();
+                }
+
+                statusText.innerText = `ĐÃ THẤY ID: ${code}. ĐANG CHUẨN BỊ AR...`;
+                statusIcon.style.backgroundColor = "#00ffcc";
+                
+                setTimeout(() => validateIdAndLoadAR(code), 500);
             }
         });
     }
 
     async function validateIdAndLoadAR(scannedId) {
-        statusText.innerText = `ĐÃ THẤY ID: ${scannedId}. ĐANG TÌM...`;
-        statusIcon.style.backgroundColor = "#00ffcc";
-
         try {
             const { data, error } = await mySupabase.from('polaroids').select('message, sender').eq('short_id', scannedId).single();
             if (error || !data) throw new Error("Không tìm thấy");
@@ -125,9 +122,9 @@
             statusText.innerText = "ĐANG TẢI THƯ VIỆN AR...";
             loadARScripts(data);
         } catch (err) {
-            statusText.innerText = "ID KHÔNG HỢP LỆ! THỬ LẠI...";
+            statusText.innerText = "ID KHÔNG HỢP LỆ! ĐANG TẢI LẠI...";
             statusIcon.style.backgroundColor = "#ff3333";
-            setTimeout(() => startBarcodeScanner(), 2000);
+            setTimeout(() => location.reload(), 2000); 
         }
     }
 
@@ -147,15 +144,19 @@
     function registerParticleComponent() {
         AFRAME.registerComponent('data-assembler', {
             schema: { targetId: {type: 'string'} },
-            init: function() { this.assembled = false; },
+            init: function() { 
+                this.assembled = false; 
+                this.el.addEventListener('start-assemble', () => { this.assemble(); });
+                this.el.addEventListener('reset-assemble', () => { this.reset(); });
+            },
             assemble: function() {
                 if(this.assembled) return;
                 this.assembled = true;
                 const targetEl = document.getElementById(this.data.targetId);
                 
-                for(let i=0; i<60; i++){
+                for(let i=0; i<40; i++){
                     let p = document.createElement('a-plane');
-                    let size = Math.random() * 0.12 + 0.03;
+                    let size = Math.random() * 0.12 + 0.05;
                     p.setAttribute('width', size); p.setAttribute('height', size/2);
                     p.setAttribute('color', Math.random() > 0.4 ? '#00ffcc' : '#ffffff');
                     p.setAttribute('material', 'shader: flat; opacity: 0.8; side: double');
@@ -180,19 +181,18 @@
             reset: function() {
                 this.assembled = false;
                 const targetEl = document.getElementById(this.data.targetId);
-                targetEl.setAttribute('visible', 'false');
-                targetEl.setAttribute('scale', '0 0 0');
+                if(targetEl) {
+                    targetEl.setAttribute('visible', 'false');
+                    targetEl.setAttribute('scale', '0 0 0');
+                }
                 while(this.el.firstChild) { this.el.removeChild(this.el.firstChild); }
             }
         });
     }
 
     function buildARScene(data) {
-        const video = document.querySelector('video');
-        if (video) video.remove();
-
         document.getElementById('ar-scene-container').innerHTML = `
-            <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false; trackingMethod: best;">
+            <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false; trackingMethod: best; patternRatio: 0.75;">
                 <a-marker preset="hiro" id="ar-marker">
                     <a-entity id="particle-core" data-assembler="targetId: hologram-msg"></a-entity>
                     <a-entity id="hologram-msg" visible="false" scale="0 0 0">
@@ -216,17 +216,17 @@
             const pCore = document.getElementById('particle-core');
             
             marker.addEventListener('markerFound', () => {
-                statusText.innerText = "ĐANG GIẢI MÃ TÂM THƯ...";
+                statusText.innerText = "ĐANG HIỂN THỊ TÂM THƯ...";
                 scannerUI.style.opacity = "0";
-                if(pCore) pCore.components['data-assembler'].assemble();
+                if(pCore) pCore.emit('start-assemble'); 
             });
 
             marker.addEventListener('markerLost', () => {
                 statusText.innerText = "MẤT DẤU. TÌM LẠI MÃ HIRO...";
                 scannerUI.style.opacity = "1";
-                if(pCore) pCore.components['data-assembler'].reset();
+                if(pCore) pCore.emit('reset-assemble');
             });
-        }, 1000);
+        }, 1500); 
     }
 </script>
 </body>
