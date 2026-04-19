@@ -3,75 +3,123 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>AR Scanner Pro - Barcode to AR</title>
+    <title>Scanner Pro - Smart Decode</title>
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 
     <style>
         body { margin: 0; overflow: hidden; background: #000; font-family: 'Inter', sans-serif; }
         
-        .fullscreen-scanner { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 10; transition: opacity 0.5s; }
-        .scan-line-full { width: 100%; height: 3px; background: #00ffcc; box-shadow: 0 0 30px 8px rgba(0,255,204,0.6); position: absolute; top: -10px; animation: scanFull 2.5s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
-        @keyframes scanFull { 0% { top: 0; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { top: 100vh; opacity: 0; } }
+        /* Container Camera */
+        #interactive.viewport { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; }
+        #interactive.viewport video, #interactive.viewport canvas { width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; }
+        #interactive.viewport canvas { z-index: 2; pointer-events: none; }
         
-        .hud-corner { position: absolute; width: 40px; height: 40px; border-color: rgba(0, 255, 204, 0.5); border-style: solid; }
-        .top-left { top: 30px; left: 30px; border-width: 3px 0 0 3px; }
-        .top-right { top: 30px; right: 30px; border-width: 3px 3px 0 0; }
-        .bottom-left { bottom: 120px; left: 30px; border-width: 0 0 3px 3px; }
-        .bottom-right { bottom: 120px; right: 30px; border-width: 0 3px 3px 0; }
+        /* Lớp mờ khi đóng băng khung hình */
+        .freeze-overlay { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.4); backdrop-filter: blur(8px); z-index: 5; opacity: 0; pointer-events: none; transition: opacity 0.4s ease; }
+        .freeze-overlay.active { opacity: 1; pointer-events: all; }
+
+        /* Khung Quét */
+        .scan-frame { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 10; transition: opacity 0.3s; }
+        .scan-line-full { width: 100%; height: 3px; background: #00ffcc; box-shadow: 0 0 30px 8px rgba(0,255,204,0.6); position: absolute; top: -10px; animation: scanFull 2s linear infinite; }
+        @keyframes scanFull { 0% { top: 10%; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { top: 90%; opacity: 0; } }
         
-        .status-wrapper { position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); z-index: 999; width: 85%; max-width: 350px; }
-        #status-ui { background: rgba(10, 10, 15, 0.85); backdrop-filter: blur(15px); border: 1px solid rgba(0,255,204,0.3); color: #fff; padding: 15px; border-radius: 20px; text-align: center; box-shadow: 0 8px 32px rgba(0,0,0,0.5); font-size: 14px; font-weight: 600;}
-        .icon-pulse { width: 12px; height: 12px; background-color: #ffdd00; border-radius: 50%; display: inline-block; margin-right: 8px; animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0% { transform: scale(0.8); opacity: 0.5; } 50% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(0.8); opacity: 0.5; } }
+        .hud-corner { position: absolute; width: 40px; height: 40px; border-color: rgba(0, 255, 204, 0.7); border-style: solid; border-radius: 8px; }
+        .top-left { top: 20%; left: 10%; border-width: 4px 0 0 4px; }
+        .top-right { top: 20%; right: 10%; border-width: 4px 4px 0 0; }
+        .bottom-left { bottom: 25%; left: 10%; border-width: 0 0 4px 4px; }
+        .bottom-right { bottom: 25%; right: 10%; border-width: 0 4px 4px 0; }
         
-        .a-enter-vr { display: none !important; }
-        canvas.drawingBuffer { position: absolute; left: 0; top: 0; opacity: 0.5; display: none;} 
+        /* Giao diện trạng thái */
+        .status-wrapper { position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); z-index: 10; width: 85%; max-width: 350px; text-align: center; transition: opacity 0.3s;}
+        #status-ui { background: rgba(10, 10, 15, 0.85); backdrop-filter: blur(15px); border: 1px solid rgba(0,255,204,0.3); color: #fff; padding: 15px; border-radius: 30px; font-size: 14px; font-weight: 600; box-shadow: 0 8px 32px rgba(0,0,0,0.5);}
+        
+        /* HIỆU ỨNG THẺ THƯ (MESSAGE CARD) */
+        #message-card {
+            position: absolute;
+            background: #fcfcfc;
+            border-radius: 16px;
+            padding: 30px 25px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            z-index: 20;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            /* Animation từ nhỏ xíu ra bự */
+            transform-origin: center center;
+            transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        
+        #message-card.show {
+            top: 50% !important;
+            left: 50% !important;
+            transform: translate(-50%, -50%) scale(1) !important;
+            width: 85%;
+            max-width: 380px;
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .msg-sender { font-family: 'Inter', sans-serif; font-size: 14px; color: #666; font-weight: 600; margin-bottom: 15px; letter-spacing: 1px; text-transform: uppercase;}
+        .msg-text { font-family: 'Caveat', cursive; font-size: 32px; color: #1a1a1a; line-height: 1.3; text-align: center; margin: 0 0 30px 0; }
+        
+        .btn-rescan {
+            background: #111; color: #fff; border: none; padding: 14px 30px; border-radius: 30px; font-family: 'Inter', sans-serif; font-weight: 600; font-size: 16px; cursor: pointer; box-shadow: 0 5px 15px rgba(0,0,0,0.2); transition: 0.2s;
+        }
+        .btn-rescan:active { transform: scale(0.95); }
     </style>
 </head>
 <body>
 
-    <div class="fullscreen-scanner" id="fs-scanner">
+    <div id="interactive" class="viewport"></div>
+    
+    <div id="freeze-overlay" class="freeze-overlay"></div>
+
+    <div class="scan-frame" id="scan-ui">
         <div class="scan-line-full"></div>
         <div class="hud-corner top-left"></div><div class="hud-corner top-right"></div>
         <div class="hud-corner bottom-left"></div><div class="hud-corner bottom-right"></div>
     </div>
     
-    <div class="status-wrapper">
-        <div id="status-ui">
-            <div class="icon-pulse" id="status-icon"></div>
-            <span id="status-text">ĐANG KHỞI TẠO CAMERA...</span>
-        </div>
+    <div class="status-wrapper" id="status-wrapper">
+        <div id="status-ui">ĐANG KHỞI TẠO CAMERA...</div>
     </div>
     
-    <div id="ar-scene-container"></div>
+    <div id="message-card">
+        <div class="msg-sender" id="card-sender"></div>
+        <p class="msg-text" id="card-message"></p>
+        <button class="btn-rescan" onclick="resetScanner()">Quét Tâm Thư Khác</button>
+    </div>
 
 <script>
     const supabaseUrl = 'https://ohnoowsqmyryipfresae.supabase.co';
     const supabaseKey = 'sb_publishable_noPrqgubuZS1dgUPlsnOKw_aOnRdWN0';
     const mySupabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-    const statusText = document.getElementById('status-text');
-    const statusIcon = document.getElementById('status-icon');
-    const scannerUI = document.getElementById('fs-scanner');
+    const statusUI = document.getElementById('status-ui');
+    const scanUI = document.getElementById('scan-ui');
+    const freezeOverlay = document.getElementById('freeze-overlay');
+    const messageCard = document.getElementById('message-card');
+    const statusWrapper = document.getElementById('status-wrapper');
 
-    window.onload = () => { startBarcodeScanner(); };
+    window.onload = () => { startScanner(); };
 
-    function startBarcodeScanner() {
-        statusText.innerText = "HÃY QUÉT MÃ VẠCH TRÊN ẢNH";
+    function startScanner() {
+        statusUI.innerText = "HÃY QUÉT MÃ VẠCH TRÊN ẢNH";
         
         Quagga.init({
             inputStream: {
                 name: "Live",
                 type: "LiveStream",
-                target: document.body,
+                target: document.querySelector('#interactive'),
                 constraints: { 
                     facingMode: "environment",
                     width: { ideal: 1920 },
                     height: { ideal: 1080 },
-                    aspectRatio: { ideal: 1.7777777778 },
                     advanced: [{ focusMode: "continuous" }] 
                 }
             },
@@ -80,153 +128,88 @@
             decoder: { readers: ["code_128_reader"], multiple: false },
             locate: true 
         }, (err) => {
-            if (err) return statusText.innerText = "LỖI CAMERA! HÃY CẤP QUYỀN.";
-            
-            const videoEl = document.querySelector("video");
-            if (videoEl) {
-                videoEl.style.objectFit = "cover";
-                videoEl.style.width = "100vw";
-                videoEl.style.height = "100vh";
-                videoEl.style.position = "absolute";
-                videoEl.style.top = "0"; videoEl.style.left = "0";
-                videoEl.style.zIndex = "1";
-            }
+            if (err) return statusUI.innerText = "LỖI CAMERA! HÃY CẤP QUYỀN.";
             Quagga.start();
         });
 
         Quagga.onDetected((result) => {
             const code = result.codeResult.code;
-            if (code && code.length === 8) { 
-                Quagga.stop();
+            // Chỉ bắt ID 6 ký tự
+            if (code && code.length === 6) { 
                 
-                // FIX LỖI ĐÓNG BĂNG: Tắt hẳn luồng camera trước khi chuyển quyền cho AR.js
-                const videoEl = document.querySelector("video");
-                if (videoEl && videoEl.srcObject) {
-                    videoEl.srcObject.getTracks().forEach(track => track.stop());
-                    videoEl.remove();
+                // 1. DỪNG QUÉT & ĐÓNG BĂNG FRAME NGAY LẬP TỨC
+                Quagga.stop();
+                const videoEl = document.querySelector("#interactive video");
+                if(videoEl) videoEl.pause(); // Cú chốt: Đóng băng Camera!
+
+                // Lấy tọa độ trung tâm của mã vạch vừa quét để làm gốc mở rộng
+                let originX = window.innerWidth / 2;
+                let originY = window.innerHeight / 2;
+                if(result.line && result.line.length >= 2) {
+                    // Quagga trả về tọa độ trên Canvas, ta map qua tỷ lệ màn hình %
+                    const canvas = document.querySelector("#interactive canvas.drawingBuffer");
+                    if(canvas) {
+                        const boxX = (result.line[0].x + result.line[1].x) / 2;
+                        const boxY = (result.line[0].y + result.line[1].y) / 2;
+                        originX = (boxX / canvas.width) * window.innerWidth;
+                        originY = (boxY / canvas.height) * window.innerHeight;
+                    }
                 }
 
-                statusText.innerText = `ĐÃ THẤY ID: ${code}. ĐANG CHUẨN BỊ AR...`;
-                statusIcon.style.backgroundColor = "#00ffcc";
-                
-                setTimeout(() => validateIdAndLoadAR(code), 500);
+                // 2. Ẩn UI quét, hiện mờ nền
+                scanUI.style.opacity = '0';
+                statusUI.innerText = "ĐANG GIẢI MÃ...";
+                freezeOverlay.classList.add('active');
+
+                // 3. Truy vấn DB và bung hoạt ảnh
+                fetchMessageAndAnimate(code, originX, originY);
             }
         });
     }
 
-    async function validateIdAndLoadAR(scannedId) {
+    async function fetchMessageAndAnimate(code, x, y) {
         try {
-            const { data, error } = await mySupabase.from('polaroids').select('message, sender').eq('short_id', scannedId).single();
-            if (error || !data) throw new Error("Không tìm thấy");
+            const { data, error } = await mySupabase.from('polaroids').select('message, sender').eq('short_id', code).single();
+            if (error || !data) throw new Error("Not Found");
 
-            statusText.innerText = "ĐANG TẢI THƯ VIỆN AR...";
-            loadARScripts(data);
+            // Điền Data
+            document.getElementById('card-sender').innerText = `FROM: ${data.sender}`;
+            document.getElementById('card-message').innerText = data.message;
+
+            statusWrapper.style.opacity = '0';
+
+            // Set vị trí xuất phát chính xác từ mã vạch (scale = 0)
+            messageCard.style.top = `${y}px`;
+            messageCard.style.left = `${x}px`;
+            messageCard.style.transform = `translate(-50%, -50%) scale(0)`;
+            
+            // Ép trình duyệt reflow để nhận vị trí mới trước khi chạy Animation
+            void messageCard.offsetWidth;
+
+            // Bắn Animation bay ra giữa màn hình
+            messageCard.classList.add('show');
+
         } catch (err) {
-            statusText.innerText = "ID KHÔNG HỢP LỆ! ĐANG TẢI LẠI...";
-            statusIcon.style.backgroundColor = "#ff3333";
-            setTimeout(() => location.reload(), 2000); 
+            statusUI.innerText = "MÃ VẠCH LỖI! TỰ ĐỘNG THỬ LẠI...";
+            setTimeout(() => resetScanner(), 2000);
         }
     }
 
-    function loadARScripts(dbData) {
-        const aframe = document.createElement('script');
-        aframe.src = "https://aframe.io/releases/1.2.0/aframe.min.js";
-        aframe.onload = () => {
-            registerParticleComponent();
-            const arjs = document.createElement('script');
-            arjs.src = "https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js";
-            arjs.onload = () => buildARScene(dbData);
-            document.head.appendChild(arjs);
-        };
-        document.head.appendChild(aframe);
-    }
-
-    function registerParticleComponent() {
-        AFRAME.registerComponent('data-assembler', {
-            schema: { targetId: {type: 'string'} },
-            init: function() { 
-                this.assembled = false; 
-                this.el.addEventListener('start-assemble', () => { this.assemble(); });
-                this.el.addEventListener('reset-assemble', () => { this.reset(); });
-            },
-            assemble: function() {
-                if(this.assembled) return;
-                this.assembled = true;
-                const targetEl = document.getElementById(this.data.targetId);
-                
-                for(let i=0; i<40; i++){
-                    let p = document.createElement('a-plane');
-                    let size = Math.random() * 0.12 + 0.05;
-                    p.setAttribute('width', size); p.setAttribute('height', size/2);
-                    p.setAttribute('color', Math.random() > 0.4 ? '#00ffcc' : '#ffffff');
-                    p.setAttribute('material', 'shader: flat; opacity: 0.8; side: double');
-                    
-                    let r = 2 + Math.random() * 2;
-                    let angle = Math.random() * Math.PI * 2;
-                    p.setAttribute('position', `${r * Math.cos(angle)} ${1 + Math.random()*3} ${r * Math.sin(angle)}`);
-                    
-                    let dur = 800 + Math.random() * 700;
-                    p.setAttribute('animation__pos', `property: position; to: 0 0.2 0; dur: ${dur}; easing: easeInExpo`);
-                    p.setAttribute('animation__scale', `property: scale; to: 0 0 0; dur: ${dur}; easing: easeInExpo`);
-                    
-                    this.el.appendChild(p);
-                    setTimeout(() => { if(p.parentNode) p.parentNode.removeChild(p); }, dur + 50);
-                }
-
-                setTimeout(() => {
-                    targetEl.setAttribute('visible', 'true');
-                    targetEl.setAttribute('animation', 'property: scale; from: 0 0 0; to: 1 1 1; dur: 1000; easing: easeOutElastic');
-                }, 1300);
-            },
-            reset: function() {
-                this.assembled = false;
-                const targetEl = document.getElementById(this.data.targetId);
-                if(targetEl) {
-                    targetEl.setAttribute('visible', 'false');
-                    targetEl.setAttribute('scale', '0 0 0');
-                }
-                while(this.el.firstChild) { this.el.removeChild(this.el.firstChild); }
-            }
-        });
-    }
-
-    function buildARScene(data) {
-        document.getElementById('ar-scene-container').innerHTML = `
-            <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false; trackingMethod: best; patternRatio: 0.75;">
-                <a-marker preset="hiro" id="ar-marker">
-                    <a-entity id="particle-core" data-assembler="targetId: hologram-msg"></a-entity>
-                    <a-entity id="hologram-msg" visible="false" scale="0 0 0">
-                        <a-entity animation="property: position; from: 0 0.2 0; to: 0 0.4 0; dir: alternate; dur: 2000; loop: true; easing: easeInOutSine">
-                            <a-plane position="0 0 -0.05" rotation="-90 0 0" width="3.2" height="2.2" color="#0a0a0a" opacity="0.92" material="shader: flat"></a-plane>
-                            <a-plane position="0 0.01 -0.05" rotation="-90 0 0" width="3.25" height="2.25" color="#00ffcc" opacity="0.4" material="wireframe: true"></a-plane>
-                            <a-text value="FROM: ${data.sender.toUpperCase()}" color="#00ffcc" position="0 0.1 -0.7" rotation="-90 0 0" align="center" width="4" font="kelsonsans"></a-text>
-                            <a-text value="${data.message}" color="#FFFFFF" position="0 0.1 0.2" rotation="-90 0 0" align="center" width="3.5" wrap-count="25" line-height="60" font="roboto"></a-text>
-                        </a-entity>
-                    </a-entity>
-                </a-marker>
-                <a-entity camera></a-entity>
-            </a-scene>
-        `;
-
-        statusText.innerText = "SẴN SÀNG! HÃY QUÉT MÃ HIRO TRÊN ẢNH";
-        statusIcon.style.backgroundColor = "#ffdd00";
-
+    function resetScanner() {
+        // Thu nhỏ thẻ lại
+        messageCard.classList.remove('show');
+        
         setTimeout(() => {
-            const marker = document.getElementById('ar-marker');
-            const pCore = document.getElementById('particle-core');
+            freezeOverlay.classList.remove('active');
+            scanUI.style.opacity = '1';
+            statusWrapper.style.opacity = '1';
+            statusUI.innerText = "HÃY QUÉT MÃ VẠCH TRÊN ẢNH";
             
-            marker.addEventListener('markerFound', () => {
-                statusText.innerText = "ĐANG HIỂN THỊ TÂM THƯ...";
-                scannerUI.style.opacity = "0";
-                if(pCore) pCore.emit('start-assemble'); 
-            });
-
-            marker.addEventListener('markerLost', () => {
-                statusText.innerText = "MẤT DẤU. TÌM LẠI MÃ HIRO...";
-                scannerUI.style.opacity = "1";
-                if(pCore) pCore.emit('reset-assemble');
-            });
-        }, 1500); 
+            // Xóa video cũ đi và bắt đầu lại từ đầu cho sạch bộ nhớ
+            Quagga.stop();
+            document.querySelector('#interactive').innerHTML = ''; 
+            startScanner();
+        }, 500); // Đợi thẻ thu nhỏ xong mới mở lại camera
     }
 </script>
 </body>
