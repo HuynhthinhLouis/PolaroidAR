@@ -7,7 +7,7 @@
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700;800&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700;800&family=Caveat:wght@600;700&display=swap&subset=vietnamese" rel="stylesheet">
 
     <style>
         :root { --text-dark: #3e2f25; --accent: #d4a373; --bg-overlay: rgba(62, 47, 37, 0.75); --card-bg: #fbf7f0;}
@@ -45,24 +45,21 @@
         }
         #message-card.show { top: 50% !important; left: 50% !important; transform: translate(-50%, -50%) scale(1) translateY(0) !important; width: 85%; max-width: 360px; opacity: 1; pointer-events: all; }
 
-        .msg-header { width: 100%; text-align: center; margin-bottom: 20px; border-bottom: 1px solid rgba(62, 47, 37, 0.1); padding-bottom: 15px;}
-        .msg-recipient { font-size: 18px; color: var(--text-dark); font-weight: 800; margin-bottom: 4px;}
-        .msg-sender { font-size: 14px; color: #7a614e; font-weight: 600;}
+        /* ĐỒNG BỘ 1 FONT CAVEAT CHO TOÀN BỘ TÂM THƯ */
+        .msg-header { width: 100%; text-align: center; margin-bottom: 20px; border-bottom: 1px solid rgba(62, 47, 37, 0.1); padding-bottom: 10px;}
+        .msg-recipient, .msg-sender, .msg-text { font-family: 'Caveat', cursive; color: var(--text-dark); }
         
-        /* KHU VỰC CUỘN THƯ (MỚI THÊM) */
+        .msg-recipient { font-size: 28px; font-weight: 700; margin-bottom: 0;}
+        .msg-sender { font-size: 22px; color: #7a614e; font-weight: 600;}
+        
         .msg-scroll-area {
-            width: 100%;
-            max-height: 250px; /* Chiều cao tối đa trước khi xuất hiện thanh cuộn */
-            overflow-y: auto;
-            margin-bottom: 25px;
-            padding: 0 5px; /* Lùi vào xíu để không dính thanh cuộn */
+            width: 100%; max-height: 250px; overflow-y: auto; margin-bottom: 25px; padding: 0 5px; 
         }
-        /* Custom thanh cuộn cho thẩm mỹ */
         .msg-scroll-area::-webkit-scrollbar { width: 5px; }
         .msg-scroll-area::-webkit-scrollbar-track { background: transparent; }
         .msg-scroll-area::-webkit-scrollbar-thumb { background: #c8b495; border-radius: 10px; }
 
-        .msg-text { font-family: 'Caveat', cursive; font-size: 30px; color: var(--text-dark); line-height: 1.3; text-align: center; margin: 0;}
+        .msg-text { font-size: 30px; line-height: 1.3; text-align: center; margin: 0;}
         
         .btn-rescan { background: transparent; color: var(--text-dark); border: 2px solid var(--text-dark); padding: 14px 30px; border-radius: 8px; font-family: 'Be Vietnam Pro', sans-serif; font-weight: 700; font-size: 14px; cursor: pointer; transition: 0.2s; width: 100%; }
         .btn-rescan:active { background: rgba(62, 47, 37, 0.05); transform: scale(0.96); }
@@ -167,7 +164,6 @@
             document.getElementById('card-sender').innerText = `Ký tên: ${data.sender}`;
             document.getElementById('card-message').innerText = data.message;
             
-            // ÉP SCROLL BAR VỀ LẠI ĐẦU TRANG
             scrollArea.scrollTop = 0;
 
             setTimeout(() => {
