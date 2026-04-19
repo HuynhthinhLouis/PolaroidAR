@@ -6,7 +6,6 @@
     <title>Polaroid AR Studio</title>
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
@@ -14,7 +13,7 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Inter:wght@400;600;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 
     <style>
         :root { --primary: #111; --bg: #f4f4f9; }
@@ -31,77 +30,104 @@
         
         .crop-container { display: none; width: 100%; height: 350px; margin-bottom: 15px; background: #222; border-radius: 8px; overflow: hidden; }
         .crop-container img { max-width: 100%; display: block; }
-        .crop-hint { text-align: center; font-size: 12px; color: #666; margin-top: -10px; margin-bottom: 15px; display: none; }
-
-        #preview-section { display: none; width: 100%; max-width: 360px; animation: fadeIn 0.4s; }
-        .instax-preview { width: 100%; background: #fcfcfc; padding: 18px 18px 85px 18px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); position: relative; box-sizing: border-box; margin: 0 auto 20px auto; }
-        .instax-preview img.photo { width: 100%; aspect-ratio: 3/4; object-fit: cover; background: #222; display: block; }
-        .info { position: absolute; bottom: 35px; left: 20px; font-family: 'Caveat', cursive; font-size: 24px; color: #1a1a1a; line-height: 1.1; transform: rotate(-2deg); }
-        .info .sender { font-size: 18px; color: #444; }
-        .digital-font { font-family: 'Share Tech Mono', monospace; font-size: 12px; color: #666; position: absolute; bottom: 12px; left: 20px; letter-spacing: 0.5px; }
         
-        .preview-codes { position: absolute; bottom: 12px; right: 18px; display: flex; align-items: flex-end; gap: 8px; }
-        #prev-barcode { height: 28px; margin-bottom: 2px;}
-        .qr-wrapper { display: flex; flex-direction: column; align-items: center; }
-        #prev-qr-code { border: 2px solid #111; padding: 2px; background: white; } 
-        .scan-text { font-family: 'Inter', sans-serif; font-size: 8px; font-weight: 800; letter-spacing: 1px; margin-top: 3px; color: #111;}
+        /* GIAO DIỆN PREVIEW MỚI */
+        #preview-section { display: none; width: 100%; max-width: 360px; animation: fadeIn 0.4s; }
+        .instax-preview { width: 100%; background: #fcfcfc; padding: 15px 15px 15px 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); position: relative; box-sizing: border-box; margin: 0 auto 20px auto; border-radius: 4px;}
+        
+        .photo-wrapper { position: relative; width: 100%; aspect-ratio: 3/4; overflow: hidden; background: #222; }
+        .photo-wrapper img.photo { width: 100%; height: 100%; object-fit: cover; display: block; }
+        
+        /* CHỮ LỒNG TRONG ẢNH GÓC NHỎ */
+        .text-overlay {
+            position: absolute;
+            bottom: 12px;
+            left: 12px;
+            color: #ffffff;
+            font-family: 'Consolas', 'Courier New', Courier, monospace; /* Font Consolas */
+            text-shadow: 2px 2px 0px #000, -1px -1px 0px #000, 1px -1px 0px #000, -1px 1px 0px #000, 1px 1px 0px #000, 0px 5px 15px rgba(0,0,0,0.9); /* Bóng đổ dày, viền đen */
+            z-index: 5;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .text-overlay .sender { font-size: 18px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;}
+        .text-overlay .digital-font { font-size: 12px; font-weight: bold; letter-spacing: 0.5px; opacity: 0.9;}
+        
+        /* MÃ VẠCH CHIẾM TRỌN ĐÁY */
+        .bottom-barcode-container { width: 100%; padding-top: 12px; display: flex; justify-content: center;}
+        #prev-barcode { width: 100% !important; height: 50px; }
+
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* KHUNG EXPORT ẨN ĐƯỢC PHÓNG TO MÃ VẠCH */
+        /* KHUNG EXPORT ẨN (DÀNH ĐỂ TẢI VỀ NÉT CĂNG) */
         #polaroid-wrapper { position: absolute; top: -9999px; left: -9999px; }
-        #polaroid-frame { width: 450px; background: #fcfcfc; padding: 25px 25px 120px 25px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); position: relative; box-sizing: border-box; }
-        #uploaded-img { width: 100%; aspect-ratio: 3/4; object-fit: cover; background: #222; display: block; }
-        .export-info { position: absolute; bottom: 40px; left: 25px; font-family: 'Caveat', cursive; font-size: 32px; color: #1a1a1a; line-height: 1.1; transform: rotate(-2deg); }
-        .export-info .sender { font-size: 24px; color: #444; }
-        .export-digital { font-family: 'Share Tech Mono', monospace; font-size: 14px; color: #666; position: absolute; bottom: 15px; left: 25px; }
-        .export-codes { position: absolute; bottom: 20px; right: 25px; display: flex; align-items: flex-end; gap: 15px; }
+        #polaroid-frame { width: 450px; background: #fcfcfc; padding: 20px 20px 20px 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); position: relative; box-sizing: border-box; border-radius: 6px;}
         
-        /* Barcode siêu dày để quét tầm xa */
-        #export-barcode { height: 50px; margin-bottom: 2px;} 
-        #export-qr-code { border: 3px solid #111; padding: 2px; background: white; } 
-        .export-scan-text { font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 800; letter-spacing: 1.5px; margin-top: 6px; color: #111;}
+        .export-photo-wrapper { position: relative; width: 100%; aspect-ratio: 3/4; overflow: hidden; background: #222; }
+        #uploaded-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        
+        .export-text-overlay {
+            position: absolute;
+            bottom: 18px;
+            left: 18px;
+            color: #ffffff;
+            font-family: 'Consolas', 'Courier New', Courier, monospace;
+            text-shadow: 3px 3px 0px #000, -1.5px -1.5px 0px #000, 1.5px -1.5px 0px #000, -1.5px 1.5px 0px #000, 1.5px 1.5px 0px #000, 0px 8px 20px rgba(0,0,0,0.9);
+            z-index: 5;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .export-text-overlay .sender { font-size: 26px; font-weight: bold; text-transform: uppercase; letter-spacing: 1.5px;}
+        .export-text-overlay .digital-font { font-size: 16px; font-weight: bold; letter-spacing: 1px;}
+        
+        .export-bottom-container { width: 100%; padding-top: 15px;}
+        #export-barcode { width: 100% !important; height: 75px; }
     </style>
 </head>
 <body>
 
     <div id="app-create">
         <div class="form-container" id="input-section">
-            <h2>Thiết Kế Polaroid</h2>
+            <h2>Thiết Kế ID Card</h2>
             <input type="file" id="imageInput" accept="image/*">
             <div class="crop-container" id="cropContainer"><img id="imageToCrop" src="" alt=""></div>
-            <div class="crop-hint" id="cropHint">💡 Chạm 2 ngón tay để thu phóng, kéo để di chuyển</div>
             
-            <div class="input-group"><input type="text" id="recipient" placeholder="Tên người nhận"></div>
-            <div class="input-group"><input type="text" id="sender" placeholder="Tên người tặng"></div>
+            <div class="input-group"><input type="text" id="sender" placeholder="Tên / Bí danh (Góc ảnh)"></div>
             <div class="input-group"><textarea id="message" rows="3" placeholder="Viết tâm thư ẩn vào đây..."></textarea></div>
             
-            <button class="btn-submit" id="btn-preview" onclick="createAndPreviewPolaroid()">Tạo & Xem trước</button>
+            <button class="btn-submit" id="btn-preview" onclick="createAndPreviewPolaroid()">Mã hóa & Tạo thẻ</button>
         </div>
 
         <div id="preview-section">
             <div class="instax-preview">
-                <img class="photo" id="preview-img" src="" alt="Preview">
-                <div class="info">
-                    <div id="prev-recipient"></div><div class="sender" id="prev-sender"></div>
+                <div class="photo-wrapper">
+                    <img class="photo" id="preview-img" src="" alt="Preview">
+                    <div class="text-overlay">
+                        <div class="sender" id="prev-sender"></div>
+                        <div class="digital-font" id="prev-digital"></div>
+                    </div>
                 </div>
-                <div class="digital-font" id="prev-digital"></div>
-                <div class="preview-codes">
+                <div class="bottom-barcode-container">
                     <svg id="prev-barcode"></svg>
-                    <div class="qr-wrapper"><div id="prev-qr-code"></div><div class="scan-text">SCAN ME</div></div>
                 </div>
             </div>
-            <button class="btn-submit" id="btn-download" onclick="downloadPolaroid()">Tải về máy</button>
-            <button class="btn-secondary" onclick="backToEdit()">Tạo tấm khác</button>
+            <button class="btn-submit" id="btn-download" onclick="downloadPolaroid()">Tải thẻ về máy</button>
+            <button class="btn-secondary" onclick="backToEdit()">Tạo thẻ khác</button>
         </div>
 
         <div id="polaroid-wrapper">
             <div id="polaroid-frame">
-                <img id="uploaded-img" src="" alt="">
-                <div class="export-info"><div id="export-recipient"></div><div class="sender" id="export-sender"></div></div>
-                <div class="export-digital" id="export-digital"></div>
-                <div class="export-codes">
+                <div class="export-photo-wrapper">
+                    <img id="uploaded-img" src="" alt="">
+                    <div class="export-text-overlay">
+                        <div class="sender" id="export-sender"></div>
+                        <div class="digital-font" id="export-digital"></div>
+                    </div>
+                </div>
+                <div class="export-bottom-container">
                     <svg id="export-barcode"></svg>
-                    <div class="qr-wrapper"><div id="export-qr-code"></div><div class="export-scan-text">SCAN ME</div></div>
                 </div>
             </div>
         </div>
@@ -111,14 +137,13 @@
     const supabaseUrl = 'https://ohnoowsqmyryipfresae.supabase.co';
     const supabaseKey = 'sb_publishable_noPrqgubuZS1dgUPlsnOKw_aOnRdWN0';
     const mySupabase = window.supabase.createClient(supabaseUrl, supabaseKey);
-    const CURRENT_URL = window.location.origin + window.location.pathname; 
 
-    let cropper, currentRecipient = "";
+    let cropper, currentSender = "";
 
     window.onload = () => { initCreateMode(); };
 
     function getDigitalDate() {
-        const d = new Date(); return `${d.getFullYear()}.${(d.getMonth()+1).toString().padStart(2,'0')}.${d.getDate().toString().padStart(2,'0')}`;
+        const d = new Date(); return `REC: ${d.getFullYear()}.${(d.getMonth()+1).toString().padStart(2,'0')}.${d.getDate().toString().padStart(2,'0')}`;
     }
 
     function initCreateMode() {
@@ -127,7 +152,6 @@
             if (file) {
                 document.getElementById('imageToCrop').src = URL.createObjectURL(file);
                 document.getElementById('cropContainer').style.display = 'block';
-                document.getElementById('cropHint').style.display = 'block';
                 if (cropper) cropper.destroy();
                 cropper = new Cropper(document.getElementById('imageToCrop'), {
                     aspectRatio: 3 / 4, viewMode: 1, dragMode: 'move', zoomable: true, scalable: true, cropBoxMovable: false, cropBoxResizable: false, toggleDragModeOnDblclick: false,
@@ -137,61 +161,54 @@
     }
 
     async function createAndPreviewPolaroid() {
-        const sender = document.getElementById('sender').value, recipient = document.getElementById('recipient').value, message = document.getElementById('message').value;
-        if(!cropper || !sender || !recipient || !message) return alert("Vui lòng điền đủ thông tin!"); 
+        const sender = document.getElementById('sender').value, message = document.getElementById('message').value;
+        if(!cropper || !sender || !message) return alert("Vui lòng điền đủ thông tin!"); 
 
-        const btn = document.getElementById('btn-preview'); btn.innerText = "Đang xử lý..."; btn.disabled = true;
+        const btn = document.getElementById('btn-preview'); btn.innerText = "Đang mã hóa dữ liệu..."; btn.disabled = true;
 
         try {
             const canvas = cropper.getCroppedCanvas({ width: 600, height: 800 });
             const croppedFile = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.9));
             
-            // TỐI ƯU 1: ID SIÊU NGẮN (CHỈ 6 KÝ TỰ) CHO BARCODE
+            // ID siêu ngắn (6 ký tự) quét chớp nhoáng
             const shortId = Math.random().toString(36).substring(2, 8).toUpperCase();
 
             const fileName = `instax_${Date.now()}_${shortId}.jpg`;
             await mySupabase.storage.from('polaroid_images').upload(fileName, croppedFile);
             const { data: pUrl } = mySupabase.storage.from('polaroid_images').getPublicUrl(fileName);
 
-            const { data: dbData } = await mySupabase.from('polaroids').insert([{ 
-                sender, recipient, message, image_url: pUrl.publicUrl, short_id: shortId
-            }]).select();
+            // Lưu DB (Bỏ biến recipient)
+            await mySupabase.from('polaroids').insert([{ 
+                sender, recipient: "HIDDEN", message, image_url: pUrl.publicUrl, short_id: shortId
+            }]);
             
-            const pId = dbData[0].id; 
-            currentRecipient = recipient;
-            const fullQRUrl = `${CURRENT_URL}?id=${pId}`; 
+            currentSender = sender;
 
+            // Render Preview
             document.getElementById('preview-img').src = canvas.toDataURL("image/jpeg", 0.8);
-            document.getElementById('prev-recipient').innerText = `To: ${recipient}`;
-            document.getElementById('prev-sender').innerText = `From: ${sender}`;
+            document.getElementById('prev-sender').innerText = sender;
             document.getElementById('prev-digital').innerText = `${getDigitalDate()} // ID:${shortId}`;
-            // Mã nhỏ cho web
-            JsBarcode("#prev-barcode", shortId, { height: 28, width: 1.5, displayValue: false, margin: 0, lineColor: "#111" });
-            document.getElementById('prev-qr-code').innerHTML = ""; 
-            new QRCode(document.getElementById("prev-qr-code"), { text: fullQRUrl, width: 45, height: 45, colorDark : "#111", colorLight : "#fff", correctLevel : QRCode.CorrectLevel.H });
+            JsBarcode("#prev-barcode", shortId, { height: 40, width: 2, displayValue: false, margin: 0, lineColor: "#111", background: "transparent" });
 
+            // Render Export
             document.getElementById('uploaded-img').src = canvas.toDataURL("image/jpeg", 1.0);
-            document.getElementById('export-recipient').innerText = `To: ${recipient}`;
-            document.getElementById('export-sender').innerText = `From: ${sender}`;
+            document.getElementById('export-sender').innerText = sender;
             document.getElementById('export-digital').innerText = `${getDigitalDate()} // ID:${shortId}`;
-            // TỐI ƯU 2: MÃ VẠCH SIÊU DÀY (width: 3.0) CHO BẢN IN
-            JsBarcode("#export-barcode", shortId, { height: 50, width: 3.0, displayValue: false, margin: 0, lineColor: "#111" });
-            document.getElementById('export-qr-code').innerHTML = ""; 
-            new QRCode(document.getElementById("export-qr-code"), { text: fullQRUrl, width: 60, height: 60, colorDark : "#111", colorLight : "#fff", correctLevel : QRCode.CorrectLevel.H });
+            JsBarcode("#export-barcode", shortId, { height: 80, width: 4, displayValue: false, margin: 0, lineColor: "#111", background: "transparent" });
 
             document.getElementById('input-section').style.display = 'none';
             document.getElementById('preview-section').style.display = 'block';
             window.scrollTo(0, 0);
 
         } catch (error) { alert("Lỗi: " + error.message); } 
-        finally { btn.innerText = "Tạo & Xem trước"; btn.disabled = false; }
+        finally { btn.innerText = "Mã hóa & Tạo thẻ"; btn.disabled = false; }
     }
 
     function downloadPolaroid() {
-        const btn = document.getElementById('btn-download'); btn.innerText = "Đang lưu..."; btn.disabled = true;
-        html2canvas(document.getElementById('polaroid-frame'), { scale: 3, useCORS: true, backgroundColor: null }).then(canvas => {
-            let link = document.createElement('a'); link.download = `Polaroid_${currentRecipient}.png`; link.href = canvas.toDataURL("image/png"); link.click();
-            btn.innerText = "Đã tải về!"; setTimeout(() => { btn.innerText = "Tải về máy"; btn.disabled = false; }, 2000);
+        const btn = document.getElementById('btn-download'); btn.innerText = "Đang tải..."; btn.disabled = true;
+        html2canvas(document.getElementById('polaroid-frame'), { scale: 3, useCORS: true, backgroundColor: "#fcfcfc" }).then(canvas => {
+            let link = document.createElement('a'); link.download = `IDCard_${currentSender}.png`; link.href = canvas.toDataURL("image/png"); link.click();
+            btn.innerText = "Hoàn tất!"; setTimeout(() => { btn.innerText = "Tải thẻ về máy"; btn.disabled = false; }, 2000);
         });
     }
 
