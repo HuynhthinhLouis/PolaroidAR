@@ -10,22 +10,28 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 
     <style>
-        /* GIỮ NGUYÊN CSS CỦA BẠN */
         body { margin: 0; overflow: hidden; background: #000; font-family: 'Inter', sans-serif; }
+        
+        /* Giao diện Scanner tầng trên */
         .fullscreen-scanner { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 10; transition: opacity 0.5s; }
         .scan-line-full { width: 100%; height: 3px; background: #00ffcc; box-shadow: 0 0 30px 8px rgba(0,255,204,0.6); position: absolute; top: -10px; animation: scanFull 2.5s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
         @keyframes scanFull { 0% { top: 0; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { top: 100vh; opacity: 0; } }
+        
         .hud-corner { position: absolute; width: 40px; height: 40px; border-color: rgba(0, 255, 204, 0.5); border-style: solid; }
         .top-left { top: 30px; left: 30px; border-width: 3px 0 0 3px; }
         .top-right { top: 30px; right: 30px; border-width: 3px 3px 0 0; }
         .bottom-left { bottom: 120px; left: 30px; border-width: 0 0 3px 3px; }
         .bottom-right { bottom: 120px; right: 30px; border-width: 0 3px 3px 0; }
+        
+        /* Status UI */
         .status-wrapper { position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); z-index: 999; width: 85%; max-width: 350px; }
-        #status-ui { background: rgba(10, 10, 15, 0.8); backdrop-filter: blur(15px); border: 1px solid rgba(0,255,204,0.3); color: #fff; padding: 15px; border-radius: 20px; text-align: center; box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
+        #status-ui { background: rgba(10, 10, 15, 0.8); backdrop-filter: blur(15px); border: 1px solid rgba(0,255,204,0.3); color: #fff; padding: 15px; border-radius: 20px; text-align: center; box-shadow: 0 8px 32px rgba(0,0,0,0.5); font-size: 14px; font-weight: 600;}
         .icon-pulse { width: 12px; height: 12px; background-color: #ffdd00; border-radius: 50%; display: inline-block; margin-right: 8px; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { transform: scale(0.8); opacity: 0.5; } 50% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(0.8); opacity: 0.5; } }
+        
+        /* Ẩn nút VR mặc định của A-Frame */
         .a-enter-vr { display: none !important; }
-        canvas.drawingBuffer { position: absolute; left: 0; top: 0; opacity: 0.5; } 
+        canvas.drawingBuffer { position: absolute; left: 0; top: 0; opacity: 0.5; display: none;} 
     </style>
 </head>
 <body>
@@ -46,6 +52,7 @@
     <div id="ar-scene-container"></div>
 
 <script>
+    // 1. Cấu hình Supabase
     const supabaseUrl = 'https://ohnoowsqmyryipfresae.supabase.co';
     const supabaseKey = 'sb_publishable_noPrqgubuZS1dgUPlsnOKw_aOnRdWN0';
     const mySupabase = window.supabase.createClient(supabaseUrl, supabaseKey);
@@ -58,6 +65,7 @@
         startBarcodeScanner();
     };
 
+    // 2. Hàm Quét Mã Vạch (Đã nâng cấp độ nét & lấy nét tự động)
     function startBarcodeScanner() {
         statusText.innerText = "HÃY QUÉT MÃ VẠCH TRÊN ẢNH";
         
@@ -66,14 +74,26 @@
                 name: "Live",
                 type: "LiveStream",
                 target: document.body,
-                constraints: { facingMode: "environment" }
+                constraints: { 
+                    facingMode: "environment",
+                    width: { min: 1280, ideal: 1920, max: 3840 },
+                    height: { min: 720, ideal: 1080, max: 2160 },
+                    advanced: [{ focusMode: "continuous" }] 
+                }
             },
+            locator: {
+                patchSize: "medium", 
+                halfSample: true
+            },
+            numOfWorkers: navigator.hardwareConcurrency || 4,
             decoder: {
-                readers: ["code_128_reader"] 
-            }
+                readers: ["code_128_reader"],
+                multiple: false
+            },
+            locate: true 
         }, (err) => {
             if (err) {
-                statusText.innerText = "LỖI CAMERA!";
+                statusText.innerText = "LỖI CAMERA! HÃY CẤP QUYỀN.";
                 return;
             }
             Quagga.start();
@@ -81,7 +101,7 @@
 
         Quagga.onDetected((result) => {
             const code = result.codeResult.code;
-            // ĐẢM BẢO CHỈ NHẬN MÃ ĐÚNG 8 KÝ TỰ MỚI XỬ LÝ
+            // Chỉ bắt đúng 8 ký tự
             if (code && code.length === 8) { 
                 Quagga.stop();
                 validateIdAndLoadAR(code);
@@ -89,12 +109,12 @@
         });
     }
 
+    // 3. Kiểm tra ID bằng cột short_id
     async function validateIdAndLoadAR(scannedId) {
         statusText.innerText = `ĐÃ THẤY ID: ${scannedId}. ĐANG TÌM...`;
         statusIcon.style.backgroundColor = "#00ffcc";
 
         try {
-            // SỬ DỤNG .EQ ĐỂ TÌM CHÍNH XÁC TRÊN CỘT short_id
             const { data, error } = await mySupabase
                 .from('polaroids')
                 .select('message, sender')
@@ -113,6 +133,7 @@
         }
     }
 
+    // 4. Tải thư viện A-Frame & AR.js động
     function loadARScripts(dbData) {
         const aframe = document.createElement('script');
         aframe.src = "https://aframe.io/releases/1.2.0/aframe.min.js";
@@ -126,6 +147,7 @@
         document.head.appendChild(aframe);
     }
 
+    // 5. Hiệu ứng hạt Hologram
     function registerParticleComponent() {
         AFRAME.registerComponent('data-assembler', {
             schema: { targetId: {type: 'string'} },
@@ -169,20 +191,21 @@
         });
     }
 
+    // 6. Dựng bối cảnh AR trên nền HIRO
     function buildARScene(data) {
         const video = document.querySelector('video');
         if (video) video.remove();
 
         document.getElementById('ar-scene-container').innerHTML = `
-            <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
+            <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false; trackingMethod: best;">
                 <a-marker preset="hiro" id="ar-marker">
                     <a-entity id="particle-core" data-assembler="targetId: hologram-msg"></a-entity>
                     <a-entity id="hologram-msg" visible="false" scale="0 0 0">
                         <a-entity animation="property: position; from: 0 0.2 0; to: 0 0.4 0; dir: alternate; dur: 2000; loop: true; easing: easeInOutSine">
-                            <a-plane position="0 0 -0.05" rotation="-90 0 0" width="3.2" height="2.2" color="#000" opacity="0.9"></a-plane>
+                            <a-plane position="0 0 -0.05" rotation="-90 0 0" width="3.2" height="2.2" color="#0a0a0a" opacity="0.92" material="shader: flat"></a-plane>
                             <a-plane position="0 0.01 -0.05" rotation="-90 0 0" width="3.25" height="2.25" color="#00ffcc" opacity="0.4" material="wireframe: true"></a-plane>
-                            <a-text value="FROM: ${data.sender.toUpperCase()}" color="#00ffcc" position="0 0.1 -0.7" rotation="-90 0 0" align="center" width="4"></a-text>
-                            <a-text value="${data.message}" color="#FFF" position="0 0.1 0.2" rotation="-90 0 0" align="center" width="3" wrap-count="25"></a-text>
+                            <a-text value="FROM: ${data.sender.toUpperCase()}" color="#00ffcc" position="0 0.1 -0.7" rotation="-90 0 0" align="center" width="4" font="kelsonsans"></a-text>
+                            <a-text value="${data.message}" color="#FFFFFF" position="0 0.1 0.2" rotation="-90 0 0" align="center" width="3.5" wrap-count="25" line-height="60" font="roboto"></a-text>
                         </a-entity>
                     </a-entity>
                 </a-marker>
@@ -190,7 +213,7 @@
             </a-scene>
         `;
 
-        statusText.innerText = "SẴN SÀNG! HÃY QUÉT MÃ HIRO";
+        statusText.innerText = "SẴN SÀNG! HÃY QUÉT MÃ HIRO TRÊN ẢNH";
         statusIcon.style.backgroundColor = "#ffdd00";
 
         setTimeout(() => {
@@ -198,13 +221,13 @@
             const pCore = document.getElementById('particle-core');
             
             marker.addEventListener('markerFound', () => {
-                statusText.innerText = "ĐANG GIẢI MÃ...";
+                statusText.innerText = "ĐANG GIẢI MÃ TÂM THƯ...";
                 scannerUI.style.opacity = "0";
                 if(pCore) pCore.components['data-assembler'].assemble();
             });
 
             marker.addEventListener('markerLost', () => {
-                statusText.innerText = "TÌM KIẾM HIRO MARKER...";
+                statusText.innerText = "MẤT DẤU. TÌM LẠI MÃ HIRO...";
                 scannerUI.style.opacity = "1";
                 if(pCore) pCore.components['data-assembler'].reset();
             });
