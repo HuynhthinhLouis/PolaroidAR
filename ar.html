@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Scanner Pro - Smart Decode</title>
+    <title>Scanner Pro - Fast Decode</title>
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
@@ -16,59 +16,74 @@
         #interactive.viewport video, #interactive.viewport canvas { width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; }
         #interactive.viewport canvas { z-index: 2; pointer-events: none; }
         
-        .freeze-overlay { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); backdrop-filter: blur(10px); z-index: 5; opacity: 0; pointer-events: none; transition: opacity 0.4s ease; }
+        /* Hiệu ứng chớp nháy Flash khi quét trúng */
+        .flash-effect { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #fff; z-index: 9999; opacity: 0; pointer-events: none; transition: opacity 0.15s ease-out; }
+        .flash-effect.trigger { animation: flashAnim 0.4s ease-out forwards; }
+        @keyframes flashAnim { 0% { opacity: 1; } 100% { opacity: 0; } }
+
+        .freeze-overlay { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 10, 5, 0.6); backdrop-filter: blur(12px); z-index: 5; opacity: 0; pointer-events: none; transition: opacity 0.5s ease; }
         .freeze-overlay.active { opacity: 1; pointer-events: all; }
 
         .scan-frame { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 10; transition: opacity 0.3s; }
-        .scan-line-full { width: 100%; height: 3px; background: #00ffcc; box-shadow: 0 0 30px 8px rgba(0,255,204,0.6); position: absolute; top: -10px; animation: scanFull 2s linear infinite; }
-        @keyframes scanFull { 0% { top: 10%; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { top: 90%; opacity: 0; } }
+        .scan-line-full { width: 100%; height: 4px; background: #00ffcc; box-shadow: 0 0 40px 10px rgba(0,255,204,0.7); position: absolute; top: -10px; animation: scanFull 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
+        @keyframes scanFull { 0% { top: 15%; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { top: 85%; opacity: 0; } }
         
-        .hud-corner { position: absolute; width: 40px; height: 40px; border-color: rgba(0, 255, 204, 0.7); border-style: solid; border-radius: 8px; }
-        .top-left { top: 20%; left: 10%; border-width: 4px 0 0 4px; }
-        .top-right { top: 20%; right: 10%; border-width: 4px 4px 0 0; }
-        .bottom-left { bottom: 25%; left: 10%; border-width: 0 0 4px 4px; }
-        .bottom-right { bottom: 25%; right: 10%; border-width: 0 4px 4px 0; }
+        .hud-corner { position: absolute; width: 50px; height: 50px; border-color: rgba(0, 255, 204, 0.8); border-style: solid; border-radius: 12px; transition: all 0.3s;}
+        .top-left { top: 15%; left: 8%; border-width: 5px 0 0 5px; }
+        .top-right { top: 15%; right: 8%; border-width: 5px 5px 0 0; }
+        .bottom-left { bottom: 20%; left: 8%; border-width: 0 0 5px 5px; }
+        .bottom-right { bottom: 20%; right: 8%; border-width: 0 5px 5px 0; }
         
-        .status-wrapper { position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); z-index: 10; width: 85%; max-width: 350px; text-align: center; transition: opacity 0.3s;}
-        #status-ui { background: rgba(10, 10, 15, 0.85); backdrop-filter: blur(15px); border: 1px solid rgba(0,255,204,0.3); color: #00ffcc; padding: 15px; border-radius: 30px; font-size: 14px; font-weight: 800; letter-spacing: 1px; box-shadow: 0 8px 32px rgba(0,0,0,0.5);}
+        .status-wrapper { position: absolute; bottom: 45px; left: 50%; transform: translateX(-50%); z-index: 10; width: 90%; max-width: 380px; text-align: center; transition: opacity 0.3s;}
+        #status-ui { background: rgba(10, 15, 20, 0.9); backdrop-filter: blur(20px); border: 2px solid rgba(0,255,204,0.4); color: #00ffcc; padding: 18px; border-radius: 40px; font-size: 15px; font-weight: 800; letter-spacing: 1.5px; box-shadow: 0 10px 40px rgba(0,255,204,0.2);}
         
+        /* Hiệu ứng thẻ nổi lượn sóng */
         #message-card {
             position: absolute;
-            background: #fff;
-            border-radius: 16px;
-            padding: 30px 25px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.7);
+            background: linear-gradient(145deg, #ffffff, #f0f0f0);
+            border-radius: 20px;
+            padding: 35px 25px;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.8), inset 0 0 0 2px rgba(255,255,255,0.5);
             z-index: 20;
             display: flex;
             flex-direction: column;
             align-items: center;
             opacity: 0;
             pointer-events: none;
+            /* Animation từ nhỏ xuất hiện bay nảy */
             transform-origin: center center;
-            transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            transform: translate(-50%, -50%) scale(0.5) translateY(50px);
+            transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
         
         #message-card.show {
             top: 50% !important;
             left: 50% !important;
-            transform: translate(-50%, -50%) scale(1) !important;
+            transform: translate(-50%, -50%) scale(1) translateY(0) !important;
             width: 85%;
-            max-width: 380px;
+            max-width: 400px;
             opacity: 1;
             pointer-events: all;
         }
 
-        .msg-sender { font-family: 'Consolas', 'Courier New', monospace; font-size: 16px; color: #111; font-weight: bold; margin-bottom: 20px; letter-spacing: 1px; text-transform: uppercase; border-bottom: 2px solid #111; padding-bottom: 5px;}
-        .msg-text { font-family: 'Caveat', cursive; font-size: 36px; color: #1a1a1a; line-height: 1.2; text-align: center; margin: 0 0 30px 0; }
+        /* Animation cho Text bên trong thẻ */
+        .msg-header { width: 100%; border-bottom: 2px solid #ddd; padding-bottom: 10px; margin-bottom: 20px; text-align: left; opacity: 0; transform: translateY(10px); transition: all 0.5s ease 0.3s;}
+        .msg-sender { font-family: 'Consolas', monospace; font-size: 14px; color: #555; font-weight: bold; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 5px;}
+        .msg-recipient { font-family: 'Consolas', monospace; font-size: 16px; color: #111; font-weight: bold; letter-spacing: 1.5px; text-transform: uppercase;}
         
+        .msg-text { font-family: 'Caveat', cursive; font-size: 38px; color: #1a1a1a; line-height: 1.3; text-align: center; margin: 0 0 35px 0; opacity: 0; transform: translateY(15px); transition: all 0.6s ease 0.4s;}
+        
+        #message-card.show .msg-header, #message-card.show .msg-text { opacity: 1; transform: translateY(0); }
+
         .btn-rescan {
-            background: #111; color: #00ffcc; border: none; padding: 14px 30px; border-radius: 30px; font-family: 'Inter', sans-serif; font-weight: 800; font-size: 14px; letter-spacing: 1px; cursor: pointer; transition: 0.2s; width: 100%;
+            background: #111; color: #00ffcc; border: none; padding: 16px 30px; border-radius: 40px; font-family: 'Inter', sans-serif; font-weight: 800; font-size: 15px; letter-spacing: 1.5px; cursor: pointer; transition: 0.2s; width: 100%; box-shadow: 0 8px 25px rgba(0,0,0,0.3);
         }
         .btn-rescan:active { transform: scale(0.95); }
     </style>
 </head>
 <body>
 
+    <div class="flash-effect" id="flash"></div>
     <div id="interactive" class="viewport"></div>
     <div id="freeze-overlay" class="freeze-overlay"></div>
 
@@ -83,9 +98,12 @@
     </div>
     
     <div id="message-card">
-        <div class="msg-sender" id="card-sender"></div>
+        <div class="msg-header">
+            <div class="msg-sender" id="card-sender"></div>
+            <div class="msg-recipient" id="card-recipient"></div>
+        </div>
         <p class="msg-text" id="card-message"></p>
-        <button class="btn-rescan" onclick="resetScanner()">QUÉT MÃ KHÁC</button>
+        <button class="btn-rescan" onclick="resetScanner()">ĐÓNG VÀ QUÉT TIẾP</button>
     </div>
 
 <script>
@@ -98,11 +116,12 @@
     const freezeOverlay = document.getElementById('freeze-overlay');
     const messageCard = document.getElementById('message-card');
     const statusWrapper = document.getElementById('status-wrapper');
+    const flashEffect = document.getElementById('flash');
 
     window.onload = () => { startScanner(); };
 
     function startScanner() {
-        statusUI.innerText = "HÃY QUÉT MÃ VẠCH (ID CARD)";
+        statusUI.innerText = "HƯỚNG CAMERA VÀO MÃ VẠCH";
         
         Quagga.init({
             inputStream: {
@@ -116,12 +135,13 @@
                     advanced: [{ focusMode: "continuous" }] 
                 }
             },
-            locator: { patchSize: "large", halfSample: false },
-            numOfWorkers: navigator.hardwareConcurrency || 4,
+            // TỐI ƯU SPEED: patchSize lớn và halfSample true giúp quét lướt qua là dính
+            locator: { patchSize: "x-large", halfSample: true },
+            numOfWorkers: navigator.hardwareConcurrency || 8,
             decoder: { readers: ["code_128_reader"], multiple: false },
             locate: true 
         }, (err) => {
-            if (err) return statusUI.innerText = "LỖI CAMERA! HÃY CẤP QUYỀN.";
+            if (err) return statusUI.innerText = "LỖI CAMERA! KIỂM TRA QUYỀN TRUY CẬP.";
             Quagga.start();
         });
 
@@ -129,10 +149,18 @@
             const code = result.codeResult.code;
             if (code && code.length === 6) { 
                 
-                Quagga.stop();
+                Quagga.stop(); // Dừng quét ngay lập tức
+                
+                // Hiệu ứng Flash trắng màn hình
+                flashEffect.classList.remove('trigger');
+                void flashEffect.offsetWidth; // Trigger reflow
+                flashEffect.classList.add('trigger');
+
+                // Đóng băng video
                 const videoEl = document.querySelector("#interactive video");
                 if(videoEl) videoEl.pause(); 
 
+                // Tính tọa độ trung tâm mã vạch
                 let originX = window.innerWidth / 2;
                 let originY = window.innerHeight / 2;
                 if(result.line && result.line.length >= 2) {
@@ -146,9 +174,10 @@
                 }
 
                 scanUI.style.opacity = '0';
-                statusUI.innerText = "ĐANG TRUY XUẤT DỮ LIỆU MẬT...";
+                statusUI.innerText = "DECRYPTING DATA...";
                 freezeOverlay.classList.add('active');
 
+                // Gửi data tọa độ sang hàm giải mã
                 fetchMessageAndAnimate(code, originX, originY);
             }
         });
@@ -156,38 +185,45 @@
 
     async function fetchMessageAndAnimate(code, x, y) {
         try {
-            const { data, error } = await mySupabase.from('polaroids').select('message, sender').eq('short_id', code).single();
+            const { data, error } = await mySupabase.from('polaroids').select('message, sender, recipient').eq('short_id', code).single();
             if (error || !data) throw new Error("Not Found");
 
-            document.getElementById('card-sender').innerText = `DATA // ${data.sender}`;
+            document.getElementById('card-sender').innerText = `FR: ${data.sender}`;
+            document.getElementById('card-recipient').innerText = `TO: ${data.recipient}`;
             document.getElementById('card-message').innerText = data.message;
 
-            statusWrapper.style.opacity = '0';
+            // Đợi 0.6s giả lập thời gian decrypt dữ liệu cho ngầu
+            setTimeout(() => {
+                statusWrapper.style.opacity = '0';
 
-            messageCard.style.top = `${y}px`;
-            messageCard.style.left = `${x}px`;
-            messageCard.style.transform = `translate(-50%, -50%) scale(0.1)`;
-            
-            void messageCard.offsetWidth;
-
-            messageCard.classList.add('show');
+                // Đặt tọa độ thẻ xuất phát từ chính cái mã vạch
+                messageCard.style.top = `${y}px`;
+                messageCard.style.left = `${x}px`;
+                
+                void messageCard.offsetWidth; // Reflow
+                
+                // Kích hoạt class show để bung CSS Animation
+                messageCard.classList.add('show');
+            }, 600);
 
         } catch (err) {
-            statusUI.innerText = "MÃ LỖI! THỬ LẠI SAU 2S...";
+            statusUI.innerText = "DATA CORRUPTED! RETRYING...";
             statusUI.style.color = "#ff3333";
+            statusUI.style.borderColor = "rgba(255,51,51,0.5)";
             setTimeout(() => resetScanner(), 2000);
         }
     }
 
     function resetScanner() {
         messageCard.classList.remove('show');
+        statusUI.style.color = "#00ffcc";
+        statusUI.style.borderColor = "rgba(0,255,204,0.4)";
         
         setTimeout(() => {
             freezeOverlay.classList.remove('active');
             scanUI.style.opacity = '1';
             statusWrapper.style.opacity = '1';
-            statusUI.style.color = "#00ffcc";
-            statusUI.innerText = "HÃY QUÉT MÃ VẠCH (ID CARD)";
+            statusUI.innerText = "HƯỚNG CAMERA VÀO MÃ VẠCH";
             
             Quagga.stop();
             document.querySelector('#interactive').innerHTML = ''; 
