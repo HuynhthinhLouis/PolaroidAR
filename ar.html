@@ -3,77 +3,68 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Máy Quét Tâm Thư AR</title>
+    <title>Máy Quét Tâm Thư 💌</title>
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Nunito:wght@400;700;800&display=swap" rel="stylesheet">
 
     <style>
-        body { margin: 0; overflow: hidden; background: #111; font-family: 'Inter', sans-serif; }
+        body { margin: 0; overflow: hidden; background: #000; font-family: 'Nunito', sans-serif; }
         
-        /* Camera Background */
         #interactive.viewport { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; }
         #interactive.viewport video, #interactive.viewport canvas { width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; }
         #interactive.viewport canvas { z-index: 2; pointer-events: none; }
         
-        /* Hiệu ứng chớp Flash nhẹ nhàng */
+        /* Hiệu ứng chớp Flash mềm mại như chụp ảnh */
         .flash-effect { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #fff; z-index: 9999; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
-        .flash-effect.trigger { animation: flashAnim 0.5s ease-out forwards; }
-        @keyframes flashAnim { 0% { opacity: 0.8; } 100% { opacity: 0; } }
+        .flash-effect.trigger { animation: flashAnim 0.7s ease-out forwards; }
+        @keyframes flashAnim { 0% { opacity: 0.9; } 100% { opacity: 0; } }
 
-        /* Lớp mờ đóng băng video khi đã quét xong */
-        .freeze-overlay { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(8px); z-index: 5; opacity: 0; pointer-events: none; transition: opacity 0.4s ease; }
+        /* Lớp mờ phong cách Blur ấm áp */
+        .freeze-overlay { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(30, 20, 25, 0.4); backdrop-filter: blur(15px); z-index: 5; opacity: 0; pointer-events: none; transition: opacity 0.5s ease; }
         .freeze-overlay.active { opacity: 1; pointer-events: all; }
 
-        /* MẶT NẠ CẮT KHUNG POLAROID */
+        /* MẶT NẠ KHUNG POLAROID */
         .camera-mask {
             position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            z-index: 10; pointer-events: none; overflow: hidden;
-            transition: opacity 0.3s;
+            z-index: 10; pointer-events: none; overflow: hidden; transition: opacity 0.4s;
         }
         
-        /* Khung định vị tổng thể */
         .polaroid-guide {
-            width: 78vw; max-width: 320px;
-            aspect-ratio: 3 / 4.1; /* Khớp tỷ lệ thẻ in ra */
-            border: 3px solid rgba(255, 255, 255, 0.9);
-            border-radius: 16px;
-            box-shadow: 0 0 0 4000px rgba(0, 0, 0, 0.65); /* Làm tối vạn vật bên ngoài thẻ */
-            display: flex; flex-direction: column;
-            overflow: hidden;
+            width: 80vw; max-width: 320px; aspect-ratio: 3 / 4.2; 
+            border: 4px solid rgba(255, 255, 255, 0.95); border-radius: 14px;
+            box-shadow: 0 0 0 4000px rgba(0, 0, 0, 0.55), 0 10px 30px rgba(0,0,0,0.3); 
+            display: flex; flex-direction: column; overflow: hidden;
         }
         
-        /* Vùng chứa ảnh trên thẻ (Không quét) */
-        .photo-guide { flex: 1; position: relative; }
+        .photo-guide { flex: 1; position: relative; border-bottom: 2px dashed rgba(255,255,255,0.4);}
         .photo-guide::after {
-            content: "KHUNG ẢNH"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            color: rgba(255,255,255,0.4); font-weight: 600; letter-spacing: 2px; font-size: 14px;
+            content: "📸 KHỚP ẢNH VÀO ĐÂY"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            color: rgba(255,255,255,0.7); font-weight: 800; letter-spacing: 1px; font-size: 14px; text-shadow: 0 2px 4px rgba(0,0,0,0.5);
         }
 
-        /* Vùng chứa mã vạch (Vùng quét) */
-        .barcode-guide {
-            height: 22%; /* Chiếm khoảng 1/5 thẻ ở đáy */
-            background: rgba(0, 255, 204, 0.15);
-            border-top: 2px dashed #00ffcc;
-            position: relative;
-        }
-        .laser-line { position: absolute; width: 100%; height: 2px; background: #00ffcc; box-shadow: 0 0 12px 2px #00ffcc; animation: scanLine 1.5s ease-in-out infinite alternate; }
-        @keyframes scanLine { 0% { top: 5%; } 100% { top: 95%; } }
-        .scan-hint { position: absolute; bottom: -35px; width: 100%; text-align: center; color: #fff; font-size: 13px; font-weight: 600; letter-spacing: 1px; text-shadow: 0 2px 4px rgba(0,0,0,0.8);}
+        .barcode-guide { height: 25%; background: rgba(255, 107, 129, 0.15); position: relative; display: flex; align-items: center; justify-content: center;}
+        .laser-line { position: absolute; width: 100%; height: 3px; background: #ff6b81; box-shadow: 0 0 15px 3px rgba(255, 107, 129, 0.8); animation: scanLine 1.5s ease-in-out infinite alternate; }
+        @keyframes scanLine { 0% { top: 10%; } 100% { top: 90%; } }
+        .scan-hint { color: #fff; font-size: 14px; font-weight: 800; letter-spacing: 1px; text-shadow: 0 2px 5px rgba(0,0,0,0.8); z-index: 2;}
 
-        /* Giao diện thanh trạng thái thân thiện */
-        .status-wrapper { position: absolute; top: 50px; left: 50%; transform: translateX(-50%); z-index: 10; width: 90%; max-width: 350px; text-align: center; transition: opacity 0.3s;}
-        #status-ui { background: #fff; color: #111; padding: 14px 20px; border-radius: 30px; font-size: 14px; font-weight: 700; box-shadow: 0 8px 25px rgba(0,0,0,0.2); display: inline-block;}
+        /* Nút trạng thái bọt bong bóng dễ thương */
+        .status-wrapper { position: absolute; top: 60px; left: 50%; transform: translateX(-50%); z-index: 10; width: 90%; max-width: 350px; text-align: center; transition: opacity 0.3s;}
+        #status-ui { background: #fff; color: #ff6b81; padding: 14px 24px; border-radius: 30px; font-size: 15px; font-weight: 800; box-shadow: 0 10px 25px rgba(0,0,0,0.15); display: inline-block; letter-spacing: 0.5px;}
         
-        /* THẺ TÂM THƯ BẬT LÊN (THIẾT KẾ MỀM MẠI, TINH TẾ HƠN) */
+        /* THIỆP BÍ MẬT BẬT LÊN */
         #message-card {
-            position: absolute; background: #fff; border-radius: 24px; padding: 35px 25px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.5); z-index: 20; display: flex; flex-direction: column; align-items: center;
+            position: absolute; background: #fff; border-radius: 20px; padding: 40px 25px 30px 25px;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.3); z-index: 20; display: flex; flex-direction: column; align-items: center;
             opacity: 0; pointer-events: none;
-            transform-origin: center center; transform: translate(-50%, -50%) scale(0.8) translateY(20px);
-            transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            /* Animation nảy dễ thương */
+            transform-origin: center center; transform: translate(-50%, -50%) scale(0.6) translateY(30px);
+            transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1.2);
+            /* Decor viền thư */
+            background-image: repeating-linear-gradient(135deg, #ff6b81 0px, #ff6b81 10px, transparent 10px, transparent 20px, #7bed9f 20px, #7bed9f 30px, transparent 30px, transparent 40px);
+            background-size: 100% 8px; background-position: top; background-repeat: no-repeat;
         }
         #message-card.show {
             top: 50% !important; left: 50% !important;
@@ -81,18 +72,18 @@
             width: 85%; max-width: 360px; opacity: 1; pointer-events: all;
         }
 
-        .msg-header { width: 100%; text-align: center; margin-bottom: 25px; border-bottom: 1px solid #eee; padding-bottom: 15px;}
-        .badge { background: #111; color: #fff; font-size: 10px; padding: 4px 10px; border-radius: 12px; letter-spacing: 1px; margin-bottom: 10px; display: inline-block;}
-        .msg-sender { font-size: 15px; color: #555; font-weight: 600;}
-        .msg-recipient { font-size: 18px; color: #111; font-weight: 800;}
+        .msg-header { width: 100%; text-align: center; margin-bottom: 25px; }
+        .msg-recipient { font-size: 20px; color: #2f3542; font-weight: 800; margin-bottom: 5px;}
+        .msg-sender { font-size: 14px; color: #747d8c; font-weight: 600;}
         
-        .msg-text { font-family: 'Caveat', cursive; font-size: 32px; color: #222; line-height: 1.4; text-align: center; margin: 0 0 35px 0;}
+        .msg-text { font-family: 'Caveat', cursive; font-size: 34px; color: #111; line-height: 1.3; text-align: center; margin: 0 0 35px 0;}
         
         .btn-rescan {
-            background: #f4f4f9; color: #111; border: 2px solid #e0e0e0; padding: 14px 30px; border-radius: 30px; 
-            font-family: 'Inter', sans-serif; font-weight: 700; font-size: 15px; cursor: pointer; transition: 0.2s; width: 100%;
+            background: #ff6b81; color: #fff; border: none; padding: 16px 30px; border-radius: 30px; 
+            font-family: 'Nunito', sans-serif; font-weight: 800; font-size: 16px; cursor: pointer; transition: 0.2s; width: 100%;
+            box-shadow: 0 8px 20px rgba(255, 107, 129, 0.4);
         }
-        .btn-rescan:active { background: #e0e0e0; transform: scale(0.96); }
+        .btn-rescan:active { transform: scale(0.95); }
     </style>
 </head>
 <body>
@@ -105,21 +96,20 @@
         <div class="polaroid-guide">
             <div class="photo-guide"></div>
             <div class="barcode-guide">
+                <div class="scan-hint">MÃ VẠCH</div>
                 <div class="laser-line"></div>
-                <div class="scan-hint">ĐẶT MÃ VẠCH VÀO ĐÂY</div>
             </div>
         </div>
     </div>
     
     <div class="status-wrapper" id="status-wrapper">
-        <div id="status-ui">👋 Xin chào! Đang bật Camera...</div>
+        <div id="status-ui">✨ Đang bật Camera...</div>
     </div>
     
     <div id="message-card">
         <div class="msg-header">
-            <div class="badge">BỨC THƯ BÍ MẬT</div>
-            <div class="msg-sender" id="card-sender"></div>
             <div class="msg-recipient" id="card-recipient"></div>
+            <div class="msg-sender" id="card-sender"></div>
         </div>
         <p class="msg-text" id="card-message"></p>
         <button class="btn-rescan" onclick="resetScanner()">Đóng & Quét Thẻ Khác</button>
@@ -140,7 +130,7 @@
     window.onload = () => { startScanner(); };
 
     function startScanner() {
-        statusUI.innerText = "Khớp thẻ vào khung hình nhé!";
+        statusUI.innerText = "Hướng Camera vào thẻ nhé 💕";
         
         Quagga.init({
             inputStream: {
@@ -148,26 +138,17 @@
                 type: "LiveStream",
                 target: document.querySelector('#interactive'),
                 constraints: { 
-                    facingMode: "environment",
-                    width: { ideal: 1920 },
-                    height: { ideal: 1080 },
-                    advanced: [{ focusMode: "continuous" }] 
+                    facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 }, advanced: [{ focusMode: "continuous" }] 
                 },
-                // TỐI ƯU CỐT LÕI: Chỉ cho phép quét ở đáy màn hình.
-                // Điều này giúp thuật toán xử lý cực nhanh vì bỏ qua toàn bộ phần ảnh rườm rà ở trên
-                area: {
-                    top: "55%",    // Bỏ qua 55% màn hình phía trên
-                    bottom: "5%",  // Chừa 5% rìa dưới
-                    left: "15%",   // Cắt viền trái
-                    right: "15%"   // Cắt viền phải
-                }
+                // CHỈ QUÉT Ở ĐÁY KHUNG HÌNH (Cắt phần trên và viền)
+                area: { top: "60%", bottom: "5%", left: "15%", right: "15%" }
             },
-            locator: { patchSize: "large", halfSample: true },
+            locator: { patchSize: "x-large", halfSample: true },
             numOfWorkers: navigator.hardwareConcurrency || 4,
             decoder: { readers: ["code_128_reader"], multiple: false },
             locate: true 
         }, (err) => {
-            if (err) return statusUI.innerText = "❌ Lỗi: Không thể mở Camera.";
+            if (err) return statusUI.innerText = "😢 Không mở được Camera rồi!";
             Quagga.start();
         });
 
@@ -177,21 +158,19 @@
                 
                 Quagga.stop(); 
                 
-                // Hiệu ứng chớp nháy
                 flashEffect.classList.remove('trigger');
                 void flashEffect.offsetWidth; 
                 flashEffect.classList.add('trigger');
 
-                // Đóng băng video
                 const videoEl = document.querySelector("#interactive video");
                 if(videoEl) videoEl.pause(); 
 
-                // Tọa độ từ vùng đáy
+                // Tọa độ bắn thẻ từ phần đáy
                 let originX = window.innerWidth / 2;
-                let originY = window.innerHeight * 0.75; // Đặt mặc định bay ra từ nửa dưới màn hình
+                let originY = window.innerHeight * 0.8; 
 
                 scanUI.style.opacity = '0';
-                statusUI.innerText = "Đang mở thư...";
+                statusUI.innerText = "💌 Đang mở thư...";
                 freezeOverlay.classList.add('active');
 
                 fetchMessageAndAnimate(code, originX, originY);
@@ -204,39 +183,40 @@
             const { data, error } = await mySupabase.from('polaroids').select('message, sender, recipient').eq('short_id', code).single();
             if (error || !data) throw new Error("Not Found");
 
-            document.getElementById('card-sender').innerText = `Từ: ${data.sender}`;
-            document.getElementById('card-recipient').innerText = `Gửi: ${data.recipient}`;
+            document.getElementById('card-recipient').innerText = `Gửi tới: ${data.recipient}`;
+            document.getElementById('card-sender').innerText = `Ký tên: ${data.sender}`;
             document.getElementById('card-message').innerText = data.message;
 
+            // Đợi flash xong rồi mới bung thẻ lên
             setTimeout(() => {
                 statusWrapper.style.opacity = '0';
                 messageCard.style.top = `${y}px`;
                 messageCard.style.left = `${x}px`;
                 void messageCard.offsetWidth; 
                 messageCard.classList.add('show');
-            }, 300);
+            }, 400);
 
         } catch (err) {
-            statusUI.innerText = "Mã không hợp lệ. Đang quét lại...";
-            statusUI.style.color = "red";
+            statusUI.innerText = "Mã này lạ quá. Thử lại nha!";
+            statusUI.style.color = "#ff4757";
             setTimeout(() => resetScanner(), 2000);
         }
     }
 
     function resetScanner() {
         messageCard.classList.remove('show');
-        statusUI.style.color = "#111";
+        statusUI.style.color = "#ff6b81";
         
         setTimeout(() => {
             freezeOverlay.classList.remove('active');
             scanUI.style.opacity = '1';
             statusWrapper.style.opacity = '1';
-            statusUI.innerText = "Khớp thẻ vào khung hình nhé!";
+            statusUI.innerText = "Hướng Camera vào thẻ nhé 💕";
             
             Quagga.stop();
             document.querySelector('#interactive').innerHTML = ''; 
             startScanner();
-        }, 400); 
+        }, 500); 
     }
 </script>
 </body>
