@@ -7,6 +7,9 @@
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700;800&family=Dancing+Script:wght@600;700&family=Caveat:wght@600;700&display=swap&subset=vietnamese" rel="stylesheet">
 
     <style>
@@ -43,7 +46,12 @@
             transform-origin: center center; transform: translate(-50%, -50%) scale(0.7) translateY(20px);
             transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
         }
-        #message-card.show { top: 50% !important; left: 50% !important; transform: translate(-50%, -50%) scale(1) translateY(0) !important; width: 85%; max-width: 360px; opacity: 1; pointer-events: all; }
+        
+        /* Hiệu ứng hào quang phát sáng khi tấm thiệp hiện ra */
+        #message-card.show { 
+            top: 50% !important; left: 50% !important; transform: translate(-50%, -50%) scale(1) translateY(0) !important; width: 85%; max-width: 360px; opacity: 1; pointer-events: all; 
+            box-shadow: 0 0 40px rgba(212, 163, 115, 0.4), 0 20px 50px rgba(0,0,0,0.6) !important;
+        }
 
         .msg-header { width: 100%; text-align: center; margin-bottom: 20px; border-bottom: 1px solid rgba(62, 47, 37, 0.1); padding-bottom: 10px;}
         
@@ -60,6 +68,25 @@
             font-family: 'Dancing Script', 'Caveat', cursive; font-size: 28px; color: var(--text-dark); 
             line-height: 1.4; text-align: center; margin: 0; white-space: pre-wrap; word-break: break-word; 
         }
+
+        /* --- HIỆU ỨNG MỰC HIỆN HÌNH --- */
+        .ink-reveal {
+            opacity: 0;
+            filter: blur(8px);
+            transform: translateY(10px);
+            animation: inkRevealAnim 1.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+        }
+
+        @keyframes inkRevealAnim {
+            0% { opacity: 0; filter: blur(8px); transform: translateY(10px); }
+            100% { opacity: 1; filter: blur(0); transform: translateY(0); }
+        }
+
+        /* Độ trễ để chữ hiện ra lần lượt */
+        #card-recipient { animation-delay: 0.4s; }
+        #card-sender { animation-delay: 0.8s; }
+        #card-message { animation-delay: 1.2s; }
+        /* ------------------------------- */
         
         .btn-rescan { background: transparent; color: var(--text-dark); border: 2px solid var(--text-dark); padding: 14px 30px; border-radius: 8px; font-family: 'Be Vietnam Pro', sans-serif; font-weight: 700; font-size: 14px; cursor: pointer; transition: 0.2s; width: 100%; }
         .btn-rescan:active { background: rgba(62, 47, 37, 0.05); transform: scale(0.96); }
@@ -90,7 +117,7 @@
         <div class="polaroid-guide">
             <div class="photo-guide"></div>
             <div class="barcode-guide">
-                <div class="scan-hint">MÃ VẠCH</div>
+                <div class="scan-hint">MÁY QUÉT</div>
                 <div class="laser-line"></div>
             </div>
         </div>
@@ -177,18 +204,47 @@
             const { data, error } = await mySupabase.from('polaroids').select('message, sender, recipient').eq('short_id', code).single();
             if (error || !data) throw new Error("Not Found");
 
-            document.getElementById('card-recipient').innerText = `Gửi tới: ${data.recipient}`;
-            document.getElementById('card-sender').innerText = `Ký tên: ${data.sender}`;
-            document.getElementById('card-message').innerText = data.message;
+            // --- Kích hoạt Bụi Đom Đóm ---
+            confetti({
+                particleCount: 80,
+                spread: 100,
+                origin: { y: 0.6 },
+                colors: ['#d4a373', '#fbf7f0', '#c8b495'], // Tông màu Vintage
+                disableForReducedMotion: true,
+                gravity: 0.5,
+                ticks: 200
+            });
+
+            // Gán dữ liệu (xóa class ink-reveal trước để reset hiệu ứng nếu có quét lại)
+            const recipientEl = document.getElementById('card-recipient');
+            const senderEl = document.getElementById('card-sender');
+            const messageEl = document.getElementById('card-message');
+
+            recipientEl.classList.remove('ink-reveal');
+            senderEl.classList.remove('ink-reveal');
+            messageEl.classList.remove('ink-reveal');
+
+            // Force reflow
+            void recipientEl.offsetWidth; 
+
+            recipientEl.innerText = `Gửi tới: ${data.recipient}`;
+            senderEl.innerText = `Ký tên: ${data.sender}`;
+            messageEl.innerText = data.message;
             
             scrollArea.scrollTop = 0;
 
+            // Chờ một chút cho nổ bụi đom đóm rồi mới hiện thiệp
             setTimeout(() => {
                 statusWrapper.style.opacity = '0';
                 messageCard.style.top = `${y}px`;
                 messageCard.style.left = `${x}px`;
                 void messageCard.offsetWidth; 
                 messageCard.classList.add('show');
+                
+                // Thêm class để chạy hiệu ứng "Mực Hiện Hình"
+                recipientEl.classList.add('ink-reveal');
+                senderEl.classList.add('ink-reveal');
+                messageEl.classList.add('ink-reveal');
             }, 300);
 
         } catch (err) {
