@@ -3,12 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Máy Quét Tâm Thư</title>
+    <title>Máy Quét Tâm Thư - Magitech</title>
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
     
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vanilla-tilt/1.8.1/vanilla-tilt.min.js"></script>
 
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700;800&family=Dancing+Script:wght@600;700&family=Caveat:wght@600;700&display=swap&subset=vietnamese" rel="stylesheet">
 
@@ -24,33 +26,70 @@
         .flash-effect.trigger { animation: flashAnim 0.6s ease-out forwards; }
         @keyframes flashAnim { 0% { opacity: 0.8; } 100% { opacity: 0; } }
 
-        .freeze-overlay { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--bg-overlay); backdrop-filter: blur(10px); z-index: 5; opacity: 0; pointer-events: none; transition: opacity 0.4s ease; }
+        /* Hiệu ứng Ngưng Đọng Không Gian (Màu vàng úa + nhiễu) */
+        .freeze-overlay { 
+            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; 
+            background: rgba(30, 20, 15, 0.6); 
+            backdrop-filter: blur(12px) sepia(60%) contrast(120%); 
+            z-index: 5; opacity: 0; pointer-events: none; transition: opacity 0.6s ease; 
+        }
         .freeze-overlay.active { opacity: 1; pointer-events: all; }
 
         .camera-mask { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10; pointer-events: none; overflow: hidden; transition: opacity 0.4s; }
         
-        .polaroid-guide { width: 78vw; max-width: 320px; aspect-ratio: 3 / 4.2; border: 3px solid rgba(255, 255, 255, 0.8); border-radius: 8px; box-shadow: 0 0 0 4000px rgba(20, 15, 10, 0.7); display: flex; flex-direction: column; overflow: hidden; background: rgba(255,255,255,0.05); }
-        .photo-guide { flex: 1; position: relative; border-bottom: 2px dashed rgba(255,255,255,0.4);}
-        .barcode-guide { height: 22%; background: rgba(212, 163, 115, 0.2); position: relative; display: flex; align-items: center; justify-content: center;}
-        .laser-line { position: absolute; width: 100%; height: 3px; background: var(--accent); box-shadow: 0 0 10px 2px var(--accent); animation: scanLine 1.5s ease-in-out infinite alternate; }
-        @keyframes scanLine { 0% { top: 10%; } 100% { top: 90%; } }
+        /* Giao Diện Lưới Quét Ma Thuật */
+        .polaroid-guide { 
+            width: 78vw; max-width: 320px; aspect-ratio: 3 / 4.2; 
+            border: 2px solid rgba(212, 163, 115, 0.5); 
+            border-radius: 12px; 
+            box-shadow: 0 0 0 4000px rgba(20, 15, 10, 0.8), 0 0 20px rgba(212, 163, 115, 0.4) inset; 
+            display: flex; flex-direction: column; overflow: hidden; 
+            background: rgba(212, 163, 115, 0.05); 
+            position: relative;
+        }
+        .photo-guide { flex: 1; position: relative; border-bottom: 2px dashed rgba(212, 163, 115, 0.4);}
+        
+        .barcode-guide { height: 25%; background: transparent; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .laser-line { 
+            position: absolute; width: 200%; height: 50px; 
+            background: linear-gradient(to bottom, rgba(212,163,115,0) 0%, rgba(212,163,115,0.4) 50%, rgba(212,163,115,0.8) 100%);
+            border-bottom: 2px solid var(--accent);
+            box-shadow: 0 5px 15px var(--accent);
+            animation: magicScan 2s cubic-bezier(0.4, 0, 0.2, 1) infinite; 
+            left: -50%;
+        }
+        @keyframes magicScan { 
+            0% { top: -60px; opacity: 0; } 
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { top: 100%; opacity: 0; } 
+        }
+        
         .scan-hint { color: #fff; font-size: 12px; font-weight: 700; letter-spacing: 2px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); z-index: 2; text-transform: uppercase;}
 
         .status-wrapper { position: absolute; top: 6vh; left: 50%; transform: translateX(-50%); z-index: 10; width: 90%; max-width: 350px; text-align: center; transition: opacity 0.3s;}
-        #status-ui { background: var(--card-bg); color: var(--text-dark); padding: 12px 20px; border-radius: 25px; font-size: 14px; font-weight: 700; box-shadow: 0 5px 15px rgba(0,0,0,0.3); display: inline-block;}
+        #status-ui { background: var(--card-bg); color: var(--text-dark); padding: 12px 20px; border-radius: 25px; font-size: 14px; font-weight: 700; box-shadow: 0 5px 15px rgba(212, 163, 115, 0.3); display: inline-block; border: 1px solid var(--accent);}
         
-        #message-card {
-            position: absolute; background: var(--card-bg); border-radius: 8px; padding: 30px 20px 25px 20px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.6); z-index: 20; display: flex; flex-direction: column; align-items: center;
-            opacity: 0; pointer-events: none; border: 1px solid #c8b495;
-            transform-origin: center center; transform: translate(-50%, -50%) scale(0.7) translateY(20px);
+        /* Cấu trúc Thẻ 3D */
+        #message-wrapper {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            z-index: 20; width: 85%; max-width: 360px;
+            pointer-events: none; opacity: 0;
             transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
         }
-        
-        /* Hiệu ứng hào quang phát sáng khi tấm thiệp hiện ra */
-        #message-card.show { 
-            top: 50% !important; left: 50% !important; transform: translate(-50%, -50%) scale(1) translateY(0) !important; width: 85%; max-width: 360px; opacity: 1; pointer-events: all; 
-            box-shadow: 0 0 40px rgba(212, 163, 115, 0.4), 0 20px 50px rgba(0,0,0,0.6) !important;
+        #message-wrapper.show { pointer-events: all; opacity: 1; }
+
+        #message-card {
+            background: var(--card-bg); border-radius: 12px; padding: 30px 20px 25px 20px;
+            box-shadow: 0 0 40px rgba(212, 163, 115, 0.4), 0 20px 50px rgba(0,0,0,0.8);
+            display: flex; flex-direction: column; align-items: center;
+            border: 1px solid #c8b495;
+            transform-style: preserve-3d;
+        }
+
+        /* Yếu tố bên trong thẻ nổi lên nhẹ tạo chiều sâu */
+        .msg-header, .msg-scroll-area, .btn-rescan {
+            transform: translateZ(30px);
         }
 
         .msg-header { width: 100%; text-align: center; margin-bottom: 20px; border-bottom: 1px solid rgba(62, 47, 37, 0.1); padding-bottom: 10px;}
@@ -69,11 +108,9 @@
             line-height: 1.4; text-align: center; margin: 0; white-space: pre-wrap; word-break: break-word; 
         }
 
-        /* --- HIỆU ỨNG MỰC HIỆN HÌNH --- */
+        /* Hiệu ứng Mực Hiện Hình */
         .ink-reveal {
-            opacity: 0;
-            filter: blur(8px);
-            transform: translateY(10px);
+            opacity: 0; filter: blur(8px); transform: translateY(10px);
             animation: inkRevealAnim 1.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
         }
 
@@ -82,27 +119,17 @@
             100% { opacity: 1; filter: blur(0); transform: translateY(0); }
         }
 
-        /* Độ trễ để chữ hiện ra lần lượt */
         #card-recipient { animation-delay: 0.4s; }
         #card-sender { animation-delay: 0.8s; }
         #card-message { animation-delay: 1.2s; }
-        /* ------------------------------- */
         
         .btn-rescan { background: transparent; color: var(--text-dark); border: 2px solid var(--text-dark); padding: 14px 30px; border-radius: 8px; font-family: 'Be Vietnam Pro', sans-serif; font-weight: 700; font-size: 14px; cursor: pointer; transition: 0.2s; width: 100%; }
         .btn-rescan:active { background: rgba(62, 47, 37, 0.05); transform: scale(0.96); }
 
-        /* CHỮ KÝ BẢN QUYỀN TRÊN MÀN HÌNH QUÉT */
         .credit-footer {
-            position: absolute;
-            bottom: 15px;
-            width: 100%;
-            text-align: center;
-            font-size: 11px;
-            color: rgba(255, 255, 255, 0.65);
-            font-weight: 600;
-            letter-spacing: 0.5px;
-            z-index: 10;
-            pointer-events: none;
+            position: absolute; bottom: 15px; width: 100%; text-align: center;
+            font-size: 11px; color: rgba(255, 255, 255, 0.65); font-weight: 600;
+            letter-spacing: 0.5px; z-index: 10; pointer-events: none;
             text-shadow: 0 1px 4px rgba(0,0,0,0.9);
         }
     </style>
@@ -127,15 +154,17 @@
         <div id="status-ui">Khớp thẻ vào khung nhé 📷</div>
     </div>
     
-    <div id="message-card">
-        <div class="msg-header">
-            <div class="msg-recipient" id="card-recipient"></div>
-            <div class="msg-sender" id="card-sender"></div>
+    <div id="message-wrapper">
+        <div id="message-card" data-tilt data-tilt-glare data-tilt-max-glare="0.3" data-tilt-scale="1.05">
+            <div class="msg-header">
+                <div class="msg-recipient" id="card-recipient"></div>
+                <div class="msg-sender" id="card-sender"></div>
+            </div>
+            <div class="msg-scroll-area" id="msg-scroll-area">
+                <p class="msg-text" id="card-message"></p>
+            </div>
+            <button class="btn-rescan" onclick="resetScanner()">Đóng & Quét Thẻ Khác</button>
         </div>
-        <div class="msg-scroll-area" id="msg-scroll-area">
-            <p class="msg-text" id="card-message"></p>
-        </div>
-        <button class="btn-rescan" onclick="resetScanner()">Đóng & Quét Thẻ Khác</button>
     </div>
 
     <div class="credit-footer">Tạo thành và phát triển bởi Huỳnh Hưng Thịnh</div>
@@ -148,7 +177,7 @@
     const statusUI = document.getElementById('status-ui');
     const scanUI = document.getElementById('scan-ui');
     const freezeOverlay = document.getElementById('freeze-overlay');
-    const messageCard = document.getElementById('message-card');
+    const messageWrapper = document.getElementById('message-wrapper');
     const statusWrapper = document.getElementById('status-wrapper');
     const flashEffect = document.getElementById('flash');
     const scrollArea = document.getElementById('msg-scroll-area');
@@ -187,35 +216,32 @@
                 const videoEl = document.querySelector("#interactive video");
                 if(videoEl) videoEl.pause(); 
 
-                let originX = window.innerWidth / 2;
-                let originY = window.innerHeight * 0.8; 
-
                 scanUI.style.opacity = '0';
                 statusUI.innerText = "Đang mở thư...";
                 freezeOverlay.classList.add('active');
 
-                fetchMessageAndAnimate(code, originX, originY);
+                fetchMessageAndAnimate(code);
             }
         });
     }
 
-    async function fetchMessageAndAnimate(code, x, y) {
+    async function fetchMessageAndAnimate(code) {
         try {
             const { data, error } = await mySupabase.from('polaroids').select('message, sender, recipient').eq('short_id', code).single();
             if (error || !data) throw new Error("Not Found");
 
             // --- Kích hoạt Bụi Đom Đóm ---
             confetti({
-                particleCount: 80,
-                spread: 100,
-                origin: { y: 0.6 },
-                colors: ['#d4a373', '#fbf7f0', '#c8b495'], // Tông màu Vintage
+                particleCount: 100,
+                spread: 120,
+                origin: { y: 0.5 },
+                colors: ['#d4a373', '#fbf7f0', '#c8b495'], 
                 disableForReducedMotion: true,
-                gravity: 0.5,
-                ticks: 200
+                gravity: 0.4,
+                ticks: 250,
+                scalar: 1.2
             });
 
-            // Gán dữ liệu (xóa class ink-reveal trước để reset hiệu ứng nếu có quét lại)
             const recipientEl = document.getElementById('card-recipient');
             const senderEl = document.getElementById('card-sender');
             const messageEl = document.getElementById('card-message');
@@ -224,7 +250,6 @@
             senderEl.classList.remove('ink-reveal');
             messageEl.classList.remove('ink-reveal');
 
-            // Force reflow
             void recipientEl.offsetWidth; 
 
             recipientEl.innerText = `Gửi tới: ${data.recipient}`;
@@ -233,15 +258,10 @@
             
             scrollArea.scrollTop = 0;
 
-            // Chờ một chút cho nổ bụi đom đóm rồi mới hiện thiệp
             setTimeout(() => {
                 statusWrapper.style.opacity = '0';
-                messageCard.style.top = `${y}px`;
-                messageCard.style.left = `${x}px`;
-                void messageCard.offsetWidth; 
-                messageCard.classList.add('show');
+                messageWrapper.classList.add('show');
                 
-                // Thêm class để chạy hiệu ứng "Mực Hiện Hình"
                 recipientEl.classList.add('ink-reveal');
                 senderEl.classList.add('ink-reveal');
                 messageEl.classList.add('ink-reveal');
@@ -254,7 +274,7 @@
     }
 
     function resetScanner() {
-        messageCard.classList.remove('show');
+        messageWrapper.classList.remove('show');
         
         setTimeout(() => {
             freezeOverlay.classList.remove('active');
@@ -265,7 +285,7 @@
             Quagga.stop();
             document.querySelector('#interactive').innerHTML = ''; 
             startScanner();
-        }, 400); 
+        }, 500); 
     }
 </script>
 </body>
