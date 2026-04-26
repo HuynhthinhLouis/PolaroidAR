@@ -248,24 +248,20 @@
             const canvas = cropper.getCroppedCanvas({ width: 900, height: 1200 });
             const shortId = Math.random().toString(36).substring(2, 8).toUpperCase();
             
-            // 1. Gửi lệnh tạo thẻ lên Database
             const { error: insertError } = await mySupabase.from('polaroids').insert([{ 
                 sender, recipient, message, short_id: shortId
             }]);
 
             if (insertError) throw new Error("Lỗi đường truyền, không thể gửi dữ liệu.");
 
-            // 2. CƠ CHẾ XÁC THỰC: Truy vấn ngược lại xem Database đã thực sự lưu chưa
             const { data: checkData, error: checkError } = await mySupabase.from('polaroids').select('short_id').eq('short_id', shortId).maybeSingle();
 
             if (checkError || !checkData || checkData.short_id !== shortId) {
                 throw new Error("Tạo thẻ không thành công (Dữ liệu chưa được ghi nhận). Vui lòng thử lại!");
             }
 
-            // BÁO THÀNH CÔNG NẾU QUA ĐƯỢC BƯỚC KIỂM TRA
             alert("🎉 Tuyệt vời! Tạo thẻ thành công. Dữ liệu đã được lưu trữ an toàn.");
             
-            // Xử lý đồ họa sau khi đã chắc chắn lưu thành công
             currentFilename = recipient.replace(/[^a-zA-Z0-9]/gi, '_').toLowerCase();
             const displayNames = `${recipient} & ${sender}`;
 
@@ -284,14 +280,12 @@
             document.getElementById('export-qr-code').innerHTML = ""; 
             new QRCode(document.getElementById("export-qr-code"), { text: qrUrl, width: 80, height: 80, colorDark : "#3e2f25", colorLight : "#ffffff", correctLevel : QRCode.CorrectLevel.H });
 
-            // Đổi giao diện
             document.getElementById('input-section').style.display = 'none';
             document.getElementById('changelog-section').style.display = 'none'; // Ẩn luôn changelog khi xem preview
             document.getElementById('preview-section').style.display = 'block';
             window.scrollTo(0, 0);
 
         } catch (error) { 
-            // HIỂN THỊ LỖI NẾU KHÔNG THÀNH CÔNG
             alert("❌ Lỗi: " + error.message); 
         } 
         finally { 
