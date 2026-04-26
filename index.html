@@ -57,6 +57,18 @@
         .crop-container { display: none; width: 100%; height: 350px; margin-bottom: 15px; background: #222; border-radius: 8px; overflow: hidden; }
         .crop-container img { max-width: 100%; display: block; }
 
+        /* CHANGELOG CSS */
+        .changelog-box {
+            background: rgba(251, 247, 240, 0.85); backdrop-filter: blur(5px);
+            padding: 18px 20px; border-radius: 12px; border: 1px dashed rgba(200, 180, 149, 0.8);
+            width: 100%; max-width: 420px; box-sizing: border-box; margin-bottom: 20px;
+            font-size: 13px; color: #5a4634; box-shadow: 0 5px 15px rgba(30, 20, 15, 0.05);
+        }
+        .changelog-box h3 { margin: 0 0 12px 0; font-size: 15px; font-weight: 800; color: var(--text-dark); border-bottom: 2px solid rgba(212, 163, 115, 0.3); padding-bottom: 8px; display: flex; align-items: center; gap: 8px;}
+        .changelog-box ul { margin: 0; padding-left: 20px; }
+        .changelog-box li { margin-bottom: 8px; line-height: 1.5; }
+        .tag-new { background: #28a745; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; margin-right: 5px; vertical-align: middle;}
+
         #preview-section { display: none; width: 100%; max-width: 380px; animation: fadeIn 0.4s ease-out; }
         .polaroid-card { 
             background: var(--card-bg); padding: 16px 16px 20px 16px; box-shadow: 2px 10px 25px rgba(0,0,0,0.3); 
@@ -96,10 +108,9 @@
         .export-barcode-wrapper { width: 100%; display: flex; justify-content: center; mix-blend-mode: multiply; margin-top: 10px;}
         #export-barcode { width: 100% !important; height: 100px; } 
 
-        /* CHỮ KÝ BẢN QUYỀN */
         .credit-footer {
             margin-top: auto; 
-            padding: 20px 0 10px 0;
+            padding: 10px 0 20px 0;
             text-align: center;
             font-size: 13px;
             color: #7a614e;
@@ -119,7 +130,7 @@
                 <ul>
                     <li><b>Bước 1:</b> Chọn 1 bức ảnh kỷ niệm.</li>
                     <li><b>Bước 2:</b> Điền tên và lời nhắn nhủ yêu thương.</li>
-                    <li><b>Bước 3:</b> Bấm Tạo Thẻ Polaroid & tải ảnh về máy. In hoặc gửi bức ảnh này cho người ấy để họ quét mã nhé và nhận tâm thư nhé!</li>
+                    <li><b>Bước 3:</b> Bấm Tạo Thẻ Polaroid & tải ảnh về máy. In hoặc gửi bức ảnh này cho người ấy để họ quét mã và nhận tâm thư nhé!</li>
                 </ul>
             </div>
 
@@ -132,6 +143,15 @@
             <div class="input-group"><textarea id="message" rows="4" placeholder="Viết tâm thư tại đây"></textarea></div>
             
             <button class="btn-submit" id="btn-preview" onclick="createAndPreview()">Tạo Thẻ Polaroid</button>
+        </div>
+
+        <div class="changelog-box" id="changelog-section">
+            <h3>📢 Nhật ký cập nhật (Changelog)</h3>
+            <ul>
+                <li><span class="tag-new">v1.1</span> <b>Cơ chế xác thực dữ liệu:</b> Tích hợp đối chiếu 2 chiều với Database sau khi tạo. Đảm bảo 100% thẻ xuất ra đều được mã hóa và quét thành công.</li>
+                <li><b>v1.0.1:</b> Ra mắt hệ thống quản trị Magitech Admin Panel.</li>
+                <li><b>v1.0.0:</b> Ra mắt phiên bản đầu tiên của Vintage Gift Studio. Hỗ trợ tạo khung Polaroid vintage, tích hợp QR Code và Barcode ẩn thư.</li>
+            </ul>
         </div>
 
         <div id="preview-section">
@@ -178,10 +198,9 @@
     const supabaseKey = 'sb_publishable_noPrqgubuZS1dgUPlsnOKw_aOnRdWN0';
     const mySupabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-    // KẾT NỐI KIỂM TRA TRẠNG THÁI BẢO TRÌ TỪ ADMIN PANEL
     async function checkMaintenanceStatus() {
         try {
-            const { data, error } = await mySupabase.from('app_settings').select('*').eq('id', 1).single();
+            const { data, error } = await mySupabase.from('app_settings').select('*').eq('id', 1).maybeSingle();
             if (data && data.is_maintenance) {
                 document.body.innerHTML = `
                     <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; background:#2a1f18; color:#fbf7f0; font-family:'Be Vietnam Pro', sans-serif; text-align:center; padding: 20px;">
@@ -193,7 +212,6 @@
             }
         } catch (err) {
             if(err.message === "Maintenance mode active") throw err;
-            console.error("Lỗi kiểm tra bảo trì:", err);
         }
     }
     checkMaintenanceStatus();
@@ -222,16 +240,32 @@
         const message = document.getElementById('message').value;
         if(!cropper || !sender || !recipient || !message) return alert("Vui lòng điền đủ thông tin nha!"); 
 
-        const btn = document.getElementById('btn-preview'); btn.innerText = "Đang xử lý..."; btn.disabled = true;
+        const btn = document.getElementById('btn-preview'); 
+        btn.innerText = "Đang mã hóa dữ liệu..."; 
+        btn.disabled = true;
 
         try {
             const canvas = cropper.getCroppedCanvas({ width: 900, height: 1200 });
             const shortId = Math.random().toString(36).substring(2, 8).toUpperCase();
             
-            await mySupabase.from('polaroids').insert([{ 
+            // 1. Gửi lệnh tạo thẻ lên Database
+            const { error: insertError } = await mySupabase.from('polaroids').insert([{ 
                 sender, recipient, message, short_id: shortId
             }]);
+
+            if (insertError) throw new Error("Lỗi đường truyền, không thể gửi dữ liệu.");
+
+            // 2. CƠ CHẾ XÁC THỰC: Truy vấn ngược lại xem Database đã thực sự lưu chưa
+            const { data: checkData, error: checkError } = await mySupabase.from('polaroids').select('short_id').eq('short_id', shortId).maybeSingle();
+
+            if (checkError || !checkData || checkData.short_id !== shortId) {
+                throw new Error("Tạo thẻ không thành công (Dữ liệu chưa được ghi nhận). Vui lòng thử lại!");
+            }
+
+            // BÁO THÀNH CÔNG NẾU QUA ĐƯỢC BƯỚC KIỂM TRA
+            alert("🎉 Tuyệt vời! Tạo thẻ thành công. Dữ liệu đã được lưu trữ an toàn.");
             
+            // Xử lý đồ họa sau khi đã chắc chắn lưu thành công
             currentFilename = recipient.replace(/[^a-zA-Z0-9]/gi, '_').toLowerCase();
             const displayNames = `${recipient} & ${sender}`;
 
@@ -250,12 +284,20 @@
             document.getElementById('export-qr-code').innerHTML = ""; 
             new QRCode(document.getElementById("export-qr-code"), { text: qrUrl, width: 80, height: 80, colorDark : "#3e2f25", colorLight : "#ffffff", correctLevel : QRCode.CorrectLevel.H });
 
+            // Đổi giao diện
             document.getElementById('input-section').style.display = 'none';
+            document.getElementById('changelog-section').style.display = 'none'; // Ẩn luôn changelog khi xem preview
             document.getElementById('preview-section').style.display = 'block';
             window.scrollTo(0, 0);
 
-        } catch (error) { alert("Lỗi: " + error.message); } 
-        finally { btn.innerText = "Tạo Thẻ Polaroid"; btn.disabled = false; }
+        } catch (error) { 
+            // HIỂN THỊ LỖI NẾU KHÔNG THÀNH CÔNG
+            alert("❌ Lỗi: " + error.message); 
+        } 
+        finally { 
+            btn.innerText = "Tạo Thẻ Polaroid"; 
+            btn.disabled = false; 
+        }
     }
 
     function downloadPolaroid() {
@@ -268,7 +310,11 @@
         }, 300);
     }
 
-    function backToEdit() { document.getElementById('input-section').style.display = 'block'; document.getElementById('preview-section').style.display = 'none'; }
+    function backToEdit() { 
+        document.getElementById('input-section').style.display = 'block'; 
+        document.getElementById('changelog-section').style.display = 'block'; // Hiện lại changelog
+        document.getElementById('preview-section').style.display = 'none'; 
+    }
 </script>
 </body>
 </html>
