@@ -553,6 +553,23 @@
             JsBarcode("#result-barcode", shortId, { height: 70, width: 4, displayValue: false, margin: 0, lineColor: "#2a1f18", background: "transparent" });
 
             document.getElementById('uploaded-img').src = canvas.toDataURL("image/jpeg", 1.0);
+            
+            // -------- FIX LỖI THU NHỎ ẢNH KHI SCROLL TRÊN MOBILE --------
+            // Khóa khung hình bằng ảnh tĩnh
+            const livePhotoContainer = document.querySelector('.live-photo-container');
+            livePhotoContainer.style.backgroundImage = `url(${canvas.toDataURL("image/jpeg", 1.0)})`;
+            livePhotoContainer.style.backgroundSize = 'cover';
+            livePhotoContainer.style.backgroundPosition = 'center';
+            livePhotoContainer.style.backgroundRepeat = 'no-repeat';
+            
+            // Ẩn lớp ảnh động của Cropper đi để tránh bị biến dạng khi scroll
+            const cropperImgs = livePhotoContainer.querySelectorAll('img');
+            cropperImgs.forEach(img => {
+                img.style.opacity = '0'; 
+                img.style.transition = 'none'; 
+            });
+            // ------------------------------------------------------------
+
             document.getElementById('export-names').innerText = displayNames;
             
             JsBarcode("#export-barcode", shortId, { height: 110, width: 8, displayValue: false, margin: 0, lineColor: "#2a1f18", background: "transparent" });
@@ -596,6 +613,21 @@
         document.getElementById('qr-display-area').classList.add('qr-placeholder');
         document.getElementById('barcode-placeholder').style.display = 'flex';
         document.getElementById('result-barcode-wrapper').style.display = 'none';
+        
+        // -------- FIX LỖI THU NHỎ ẢNH: KHÔI PHỤC TRẠNG THÁI SỬA --------
+        const livePhotoContainer = document.querySelector('.live-photo-container');
+        livePhotoContainer.style.backgroundImage = 'none'; // Xóa ảnh tĩnh
+        
+        // Hiển thị lại lớp ảnh động của Cropper
+        const cropperImgs = livePhotoContainer.querySelectorAll('img');
+        cropperImgs.forEach(img => img.style.opacity = '1');
+
+        // Kích hoạt lại resize để Cropper nhận diện đúng kích thước khung
+        setTimeout(() => {
+            window.dispatchEvent(new Event('resize'));
+        }, 100);
+        // -------------------------------------------------------------
+
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 </script>
