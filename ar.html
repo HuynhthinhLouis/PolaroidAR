@@ -20,7 +20,7 @@
         #interactive.viewport video, #interactive.viewport canvas { width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; }
         #interactive.viewport canvas { z-index: 2; pointer-events: none; }
         
-        /* BRANDING TOP BAR & HỆ THỐNG NÚT */
+        /* BRANDING TOP BAR */
         .ar-top-bar {
             position: absolute; top: 20px; left: 20px; right: 20px;
             display: flex; justify-content: space-between; align-items: center;
@@ -28,27 +28,27 @@
         }
         .ar-logo {
             font-family: 'Be Vietnam Pro', sans-serif; font-size: 24px; font-weight: 800;
-            color: #2a1f18;
+            color: #2a1f18; /* Màu chữ chính tối để nổi bật trên nền mờ */
             letter-spacing: 1px; text-transform: uppercase;
             text-shadow: 0 2px 4px rgba(255,255,255,0.5);
-            margin: 0; background: rgba(255, 253, 248, 0.6); 
-            backdrop-filter: blur(8px); padding: 8px 16px;
-            border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            margin: 0;
+            background: rgba(255, 253, 248, 0.6); /* Nền vuông bo góc mờ */
+            backdrop-filter: blur(8px);
+            padding: 8px 16px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
         }
         .ar-logo span { color: var(--accent); }
-
-        .ar-actions { display: flex; gap: 10px; pointer-events: all; }
-        .btn-action {
-            background: rgba(255, 255, 255, 0.2);
+        .btn-home {
+            pointer-events: all; background: rgba(255, 255, 255, 0.2);
             backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
             border: 1px solid rgba(255,255,255,0.4); color: #fff; 
-            padding: 8px 14px; border-radius: 20px; font-size: 13px; 
-            font-weight: 700; text-decoration: none; cursor: pointer;
+            padding: 8px 16px; border-radius: 20px; font-size: 13px; 
+            font-weight: 700; text-decoration: none;
             box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: 0.3s ease;
             text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-            display: flex; align-items: center; justify-content: center; gap: 5px;
         }
-        .btn-action:hover { background: rgba(255, 255, 255, 0.3); transform: translateY(-2px); }
+        .btn-home:hover { background: rgba(255, 255, 255, 0.3); transform: translateY(-2px); }
 
         .flash-effect { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #fff; z-index: 9999; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
         .flash-effect.trigger { animation: flashAnim 0.6s ease-out forwards; }
@@ -94,7 +94,7 @@
         .scan-hint { color: #fff; font-size: 12px; font-weight: 700; letter-spacing: 2px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); z-index: 2; text-transform: uppercase;}
 
         .status-wrapper { position: absolute; top: 11vh; left: 50%; transform: translateX(-50%); z-index: 10; width: 90%; max-width: 350px; text-align: center; transition: opacity 0.3s;}
-        #status-ui { background: var(--card-bg); color: var(--text-dark); padding: 12px 20px; border-radius: 25px; font-size: 14px; font-weight: 700; box-shadow: 0 5px 15px rgba(212, 163, 115, 0.3); display: inline-block; border: 1px solid var(--accent); transition: all 0.3s;}
+        #status-ui { background: var(--card-bg); color: var(--text-dark); padding: 12px 20px; border-radius: 25px; font-size: 14px; font-weight: 700; box-shadow: 0 5px 15px rgba(212, 163, 115, 0.3); display: inline-block; border: 1px solid var(--accent);}
         
         #message-wrapper {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
@@ -112,8 +112,12 @@
             transform-style: preserve-3d;
         }
 
-        .msg-header, .msg-scroll-area, .btn-rescan { transform: translateZ(30px); }
+        .msg-header, .msg-scroll-area, .btn-rescan {
+            transform: translateZ(30px);
+        }
+
         .msg-header { width: 100%; text-align: center; margin-bottom: 20px; border-bottom: 1px solid rgba(62, 47, 37, 0.1); padding-bottom: 10px;}
+        
         .msg-recipient, .msg-sender { font-family: 'Dancing Script', 'Caveat', cursive; color: var(--text-dark); }
         .msg-recipient { font-size: 28px; font-weight: 700; margin-bottom: 0;}
         .msg-sender { font-size: 22px; color: #7a614e; font-weight: 600;}
@@ -132,6 +136,7 @@
             opacity: 0; filter: blur(8px); transform: translateY(10px);
             animation: inkRevealAnim 1.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
         }
+
         @keyframes inkRevealAnim {
             0% { opacity: 0; filter: blur(8px); transform: translateY(10px); }
             100% { opacity: 1; filter: blur(0); transform: translateY(0); }
@@ -156,15 +161,7 @@
 
     <div class="ar-top-bar">
         <h1 class="ar-logo">Polaroid<span>AR</span></h1>
-        
-        <div class="ar-actions">
-            <label for="file-scan-input" class="btn-action">
-                🖼️ Tải ảnh
-            </label>
-            <input type="file" id="file-scan-input" accept="image/*" style="display: none;">
-            
-            <a href="https://huynhthinhlouis.github.io/polaroidar/" class="btn-action" title="Về trang tạo thẻ">🏠</a>
-        </div>
+        <a href="https://huynhthinhlouis.github.io/polaroidar/" class="btn-home">Trang chủ</a>
     </div>
 
     <div class="flash-effect" id="flash"></div>
@@ -232,25 +229,7 @@
     const flashEffect = document.getElementById('flash');
     const scrollArea = document.getElementById('msg-scroll-area');
 
-    window.onload = () => { startScanner(); initFileScanner(); };
-
-    // TÁCH LOGIC XỬ LÝ KHI QUÉT THÀNH CÔNG ĐỂ DÙNG CHUNG CHO CAMERA VÀ ẢNH UP LÊN
-    function handleSuccessfulScan(code) {
-        Quagga.stop(); 
-        
-        flashEffect.classList.remove('trigger');
-        void flashEffect.offsetWidth; 
-        flashEffect.classList.add('trigger');
-
-        const videoEl = document.querySelector("#interactive video");
-        if(videoEl) videoEl.pause(); 
-
-        scanUI.style.opacity = '0';
-        statusUI.innerText = "Đang mở thư...";
-        freezeOverlay.classList.add('active');
-
-        fetchMessageAndAnimate(code);
-    }
+    window.onload = () => { startScanner(); };
 
     function startScanner() {
         statusUI.innerText = "Khớp mã vạch vào khung nhé 📷";
@@ -261,7 +240,6 @@
                 type: "LiveStream",
                 target: document.querySelector('#interactive'),
                 constraints: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 }, advanced: [{ focusMode: "continuous" }] },
-                // VỚI LIVE CAM: Mình ép nó quét đúng khung giữa để tăng tốc độ và độ chuẩn xác
                 area: { top: "65%", bottom: "5%", left: "10%", right: "10%" }
             },
             locator: { patchSize: "large", halfSample: true },
@@ -276,58 +254,21 @@
         Quagga.onDetected((result) => {
             const code = result.codeResult.code;
             if (code && code.length === 6) { 
-                handleSuccessfulScan(code);
+                Quagga.stop(); 
+                
+                flashEffect.classList.remove('trigger');
+                void flashEffect.offsetWidth; 
+                flashEffect.classList.add('trigger');
+
+                const videoEl = document.querySelector("#interactive video");
+                if(videoEl) videoEl.pause(); 
+
+                scanUI.style.opacity = '0';
+                statusUI.innerText = "Đang mở thư...";
+                freezeOverlay.classList.add('active');
+
+                fetchMessageAndAnimate(code);
             }
-        });
-    }
-
-    // TÍNH NĂNG QUÉT TỪ ẢNH LƯU TRONG MÁY
-    function initFileScanner() {
-        document.getElementById('file-scan-input').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            // Tạm dừng camera live để dành toàn bộ sức mạnh phần cứng quét ảnh tĩnh
-            Quagga.stop();
-            const videoEl = document.querySelector("#interactive video");
-            if(videoEl) videoEl.pause();
-
-            statusUI.innerText = "🔍 Đang rà quét toàn bộ bức ảnh...";
-            
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                Quagga.decodeSingle({
-                    src: event.target.result,
-                    numOfWorkers: navigator.hardwareConcurrency || 4, // Tận dụng đa luồng quét cho lẹ
-                    inputStream: {
-                        size: 1600 // Resize ảnh nội bộ giúp Quagga nhận diện vạch đen trắng dễ hơn
-                    },
-                    locator: {
-                        patchSize: "large", // Phân bổ lưới quét các vùng rộng lớn
-                        halfSample: false   // KHÔNG GIẢM MẪU CHẤT LƯỢNG - Bắt buộc quét chi tiết để tìm mã tít ở góc
-                    },
-                    decoder: { 
-                        readers: ["code_128_reader"],
-                        multiple: false
-                    },
-                    locate: true // KHÔNG BỊ RÀNG BUỘC BỞI THUỘC TÍNH 'AREA' NHƯ LIVE CAM. TỰ DO QUÉT KHẮP MỌI NƠI!
-                }, function(result) {
-                    if (result && result.codeResult && result.codeResult.code) {
-                        const code = result.codeResult.code;
-                        if (code.length === 6) {
-                            handleSuccessfulScan(code);
-                        } else {
-                            statusUI.innerText = "❌ Mã không hợp lệ. Đang bật lại Camera...";
-                            setTimeout(() => { document.querySelector('#interactive').innerHTML = ''; startScanner(); }, 2500);
-                        }
-                    } else {
-                        statusUI.innerText = "❌ Không tìm thấy mã vạch rõ nét. Đang bật lại Camera...";
-                        setTimeout(() => { document.querySelector('#interactive').innerHTML = ''; startScanner(); }, 2500);
-                    }
-                    e.target.value = ''; // Reset file input để có thể chọn lại đúng ảnh đó nếu cần
-                });
-            };
-            reader.readAsDataURL(file);
         });
     }
 
