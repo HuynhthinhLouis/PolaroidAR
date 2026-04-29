@@ -159,7 +159,7 @@
         
         <div class="ar-actions">
             <label for="file-scan-input" class="btn-action">
-                Tải ảnh
+                🖼️ Tải ảnh
             </label>
             <input type="file" id="file-scan-input" accept="image/*" style="display: none;">
             
@@ -261,6 +261,7 @@
                 type: "LiveStream",
                 target: document.querySelector('#interactive'),
                 constraints: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 }, advanced: [{ focusMode: "continuous" }] },
+                // VỚI LIVE CAM: Mình ép nó quét đúng khung giữa để tăng tốc độ và độ chuẩn xác
                 area: { top: "65%", bottom: "5%", left: "10%", right: "10%" }
             },
             locator: { patchSize: "large", halfSample: true },
@@ -280,35 +281,50 @@
         });
     }
 
-    // TÍNH NĂNG MỚI: QUÉT TỪ ẢNH LƯU TRONG MÁY
+    // TÍNH NĂNG QUÉT TỪ ẢNH LƯU TRONG MÁY
     function initFileScanner() {
         document.getElementById('file-scan-input').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (!file) return;
 
-            statusUI.innerText = "⏳ Đang quét ảnh...";
+            // Tạm dừng camera live để dành toàn bộ sức mạnh phần cứng quét ảnh tĩnh
+            Quagga.stop();
+            const videoEl = document.querySelector("#interactive video");
+            if(videoEl) videoEl.pause();
+
+            statusUI.innerText = "🔍 Đang rà quét toàn bộ bức ảnh...";
             
             const reader = new FileReader();
             reader.onload = function(event) {
                 Quagga.decodeSingle({
                     src: event.target.result,
-                    numOfWorkers: 0,
-                    decoder: { readers: ["code_128_reader"] },
-                    locate: true
+                    numOfWorkers: navigator.hardwareConcurrency || 4, // Tận dụng đa luồng quét cho lẹ
+                    inputStream: {
+                        size: 1600 // Resize ảnh nội bộ giúp Quagga nhận diện vạch đen trắng dễ hơn
+                    },
+                    locator: {
+                        patchSize: "large", // Phân bổ lưới quét các vùng rộng lớn
+                        halfSample: false   // KHÔNG GIẢM MẪU CHẤT LƯỢNG - Bắt buộc quét chi tiết để tìm mã tít ở góc
+                    },
+                    decoder: { 
+                        readers: ["code_128_reader"],
+                        multiple: false
+                    },
+                    locate: true // KHÔNG BỊ RÀNG BUỘC BỞI THUỘC TÍNH 'AREA' NHƯ LIVE CAM. TỰ DO QUÉT KHẮP MỌI NƠI!
                 }, function(result) {
                     if (result && result.codeResult && result.codeResult.code) {
                         const code = result.codeResult.code;
                         if (code.length === 6) {
                             handleSuccessfulScan(code);
                         } else {
-                            statusUI.innerText = "❌ Mã không hợp lệ. Thử ảnh khác.";
-                            setTimeout(() => { statusUI.innerText = "Khớp mã vạch vào khung nhé 📷"; }, 3000);
+                            statusUI.innerText = "❌ Mã không hợp lệ. Đang bật lại Camera...";
+                            setTimeout(() => { document.querySelector('#interactive').innerHTML = ''; startScanner(); }, 2500);
                         }
                     } else {
-                        statusUI.innerText = "❌ Không tìm thấy mã vạch rõ nét.";
-                        setTimeout(() => { statusUI.innerText = "Khớp mã vạch vào khung nhé 📷"; }, 3000);
+                        statusUI.innerText = "❌ Không tìm thấy mã vạch rõ nét. Đang bật lại Camera...";
+                        setTimeout(() => { document.querySelector('#interactive').innerHTML = ''; startScanner(); }, 2500);
                     }
-                    e.target.value = ''; // Reset input để có thể chọn lại cùng 1 ảnh
+                    e.target.value = ''; // Reset file input để có thể chọn lại đúng ảnh đó nếu cần
                 });
             };
             reader.readAsDataURL(file);
